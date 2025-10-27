@@ -57,7 +57,7 @@
 </div>
 
 <script>
-const GOOGLE_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzGJy8WInLBIJGuqa90bDMWuK9SIHOJ4IH5No8EcvdPWJQsmUKfQqrPNe5aFB7pCwE-sA/exec';
+const GOOGLE_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwB7pk5_iFhFJ4ShINrNb308zt9ZjJDj0H9WqgnFesjyqEaBZrD5Woq5Gihp2MW6vsN-A/exec';
 
 async function api(action, params){ const url = new URL(GOOGLE_SCRIPT_URL); url.searchParams.set('action', action); Object.keys(params||{}).forEach(k=> url.searchParams.set(k, params[k])); try{ const res = await fetch(url); const data = await res.json(); return data; }catch(e){ console.error(e); alert('خطأ في الوصول إلى الخادم. تأكد أن Web App منشور أو تحقق من الشبكة.'); return null; } }
 
