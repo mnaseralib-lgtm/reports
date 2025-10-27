@@ -3,31 +3,60 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width,initial-scale=1" />
-<title>نظام الحضور</title>
+<title>نظام الحضور - مترو أبو قير</title>
 <link rel="manifest" href="manifest.json">
 <meta name="theme-color" content="#10b981"/>
 <style>
-  body{font-family:Arial, sans-serif;background:#f3f4f6;color:#111;padding:0;margin:0;direction:rtl}
+  :root {
+    --primary: #10b981;
+    --secondary: #3b82f6;
+    --danger: #ef4444;
+    --warning: #f59e0b;
+    --dark: #06212a;
+  }
+  
+  body{font-family:"Cairo", Arial, sans-serif;background:#f3f4f6;color:#111;padding:0;margin:0;direction:rtl}
   .app{display:flex;min-height:100vh}
-  .sidebar{width:72px;background:#06212a;color:#fff;display:flex;flex-direction:column;align-items:center;padding:12px;gap:12px}
-  .sidebar a{color:#fff;text-decoration:none;font-size:12px;text-align:center}
+  .sidebar{width:72px;background:var(--dark);color:#fff;display:flex;flex-direction:column;align-items:center;padding:12px;gap:12px;transition:all 0.3s}
+  .sidebar a{color:#fff;text-decoration:none;font-size:12px;text-align:center;transition:transform 0.2s}
+  .sidebar a:hover{transform:translateY(-2px)}
   .main{flex:1;padding:18px}
-  .card{max-width:720px;margin:18px auto;background:#fff;padding:18px;border-radius:12px;box-shadow:0 6px 24px rgba(0,0,0,0.08)}
-  h1{font-size:20px;margin:0 0 10px}
-  .controls{display:flex;gap:12px;align-items:center;flex-wrap:wrap;justify-content:center;margin-bottom:12px}
-  select,input[type=text]{padding:10px;border-radius:8px;border:1px solid #e5e7eb;font-size:15px}
-  button{padding:10px 14px;border-radius:8px;border:none;background:#3b82f6;color:#fff;font-weight:600;cursor:pointer}
+  .card{max-width:720px;margin:18px auto;background:#fff;padding:24px;border-radius:16px;box-shadow:0 8px 32px rgba(0,0,0,0.1);border:1px solid #e5e7eb}
+  h1{font-size:22px;margin:0 0 15px;color:var(--dark);text-align:center}
+  .controls{display:flex;gap:12px;align-items:center;flex-wrap:wrap;justify-content:center;margin-bottom:18px;padding:15px;background:#f8fafc;border-radius:12px}
+  select,input[type=text]{padding:12px;border-radius:10px;border:1px solid #d1d5db;font-size:16px;font-family:"Cairo";width:180px;background:white}
+  button{padding:12px 18px;border-radius:10px;border:none;color:#fff;font-weight:600;cursor:pointer;font-family:"Cairo";font-size:15px;transition:all 0.2s;min-width:120px}
+  button:hover{transform:translateY(-2px);box-shadow:0 4px 12px rgba(0,0,0,0.15)}
+  #startBtn{background:var(--primary)}
+  #stopBtn{background:var(--danger)}
   #exportBtn{background:#06b6d4}
   #syncBtn{background:#8b5cf6}
-  #reader{width:100%;max-width:480px;margin:8px auto;border-radius:10px;overflow:hidden;background:#000}
-  .confirmation-message{position:fixed;top:18px;left:50%;transform:translateX(-50%);background:rgba(16,185,129,0.97);color:#fff;padding:10px 18px;border-radius:10px;z-index:9999;display:none;font-weight:700}
-  .error-message{position:fixed;top:18px;left:50%;transform:translateX(-50%);background:rgba(239,68,68,0.97);color:#fff;padding:10px 18px;border-radius:10px;z-index:9999;display:none;font-weight:700}
-  .counter{font-weight:700;color:#065f46}
-  .manual-row{display:flex;gap:8px;justify-content:center;align-items:center;margin-top:10px;flex-wrap:wrap}
-  .small{font-size:13px;color:#6b7280}
+  #reader{width:100%;max-width:480px;margin:15px auto;border-radius:12px;overflow:hidden;background:#000;box-shadow:0 8px 25px rgba(0,0,0,0.2)}
+  .confirmation-message{position:fixed;top:20px;left:50%;transform:translateX(-50%);background:rgba(16,185,129,0.95);color:#fff;padding:12px 20px;border-radius:10px;z-index:9999;display:none;font-weight:700;box-shadow:0 4px 15px rgba(16,185,129,0.3);backdrop-filter:blur(10px)}
+  .error-message{position:fixed;top:20px;left:50%;transform:translateX(-50%);background:rgba(239,68,68,0.95);color:#fff;padding:12px 20px;border-radius:10px;z-index:9999;display:none;font-weight:700;box-shadow:0 4px 15px rgba(239,68,68,0.3);backdrop-filter:blur(10px)}
+  .counter{font-weight:700;color:#065f46;font-size:16px;background:white;padding:10px 15px;border-radius:8px;border:2px solid #d1fae5}
+  .manual-row{display:flex;gap:10px;justify-content:center;align-items:center;margin-top:15px;flex-wrap:wrap}
+  .small{font-size:14px;color:#6b7280}
   .link-icon{writing-mode:vertical-rl;transform:rotate(180deg);font-weight:700}
-  .pending-badge{background:#f59e0b;color:white;padding:2px 6px;border-radius:10px;font-size:11px;margin-left:5px}
-  @media (max-width:720px){ .sidebar{display:flex;width:56px} }
+  .pending-badge{background:var(--warning);color:white;padding:4px 8px;border-radius:12px;font-size:12px;margin-right:8px}
+  .status-indicator{width:8px;height:8px;border-radius:50%;display:inline-block;margin-left:5px}
+  .status-online{background:#10b981}
+  .status-offline{background:#ef4444}
+  .sync-animation{animation:pulse 1.5s infinite}
+  
+  @keyframes pulse {
+    0% { opacity: 1; }
+    50% { opacity: 0.5; }
+    100% { opacity: 1; }
+  }
+  
+  @media (max-width:720px){ 
+    .sidebar{width:60px;padding:8px} 
+    .card{padding:15px;margin:10px}
+    .controls{gap:8px}
+    select,input[type=text]{width:140px;padding:10px}
+    button{min-width:100px;padding:10px 12px}
+  }
 </style>
 </head>
 <body>
@@ -35,12 +64,14 @@
   <nav class="sidebar" role="navigation" aria-label="القائمة الجانبية">
     <a href="index.html" title="الرئيسية">🏠<div style="font-size:11px;margin-top:6px">الرئيسية</div></a>
     <a href="reports.html" title="التقارير">📊<div style="font-size:11px;margin-top:6px">التقارير</div></a>
-    <a href="#" id="offlineStatus" title="حالة الاتصال">⚡<div style="font-size:11px;margin-top:6px">متصل</div></a>
+    <a href="#" id="offlineStatus" title="حالة الاتصال">
+      ⚡<div style="font-size:11px;margin-top:6px">متصل<span class="status-indicator status-online"></span></div>
+    </a>
   </nav>
 
   <main class="main">
     <div class="card">
-    <center><h1>Abo Qir Metro JV Orascom & Colas rails</h1></center>
+      <center><h1>نظام الحضور - مترو أبو قير</h1></center>
       <div class="controls" role="region" aria-label="إعدادات">
         <label for="movementSelect" class="small">نوع الحركة:</label>
         <select id="movementSelect" aria-label="اختيار نوع الحركة">
@@ -50,25 +81,30 @@
           <option value="انصراف مسائي">انصراف مسائي</option>
         </select>
 
-        <div class="counter" id="scanCount">عدد الحالات المسجلة: 0 <span id="pendingCount" class="pending-badge" style="display:none">0</span></div>
+        <div class="counter" id="scanCount">
+          عدد الحالات: 0 
+          <span id="pendingCount" class="pending-badge" style="display:none">0</span>
+        </div>
 
-        <button id="stopBtn" style="background:#ef4444">إيقاف الماسح</button>
-        <button id="startBtn" style="background:#10b981">تشغيل الماسح</button>
-        <button id="syncBtn">مزامنة</button>
+        <button id="stopBtn">إيقاف الماسح</button>
+        <button id="startBtn">تشغيل الماسح</button>
+        <button id="syncBtn">🔄 مزامنة</button>
       </div>
 
       <div id="reader" aria-live="polite"></div>
 
       <div class="manual-row">
         <input type="text" id="manualInput" placeholder="إدخال يدوي - رقم أو اسم" aria-label="إدخال يدوي">
-        <button id="manualAddBtn">إضافة يدوي</button>
+        <button id="manualAddBtn">➕ إضافة يدوي</button>
       </div>
 
-      <div style="text-align:center;margin-top:14px">
-        <button id="exportBtn">تصدير إلى Excel (CSV)</button>
+      <div style="text-align:center;margin-top:20px">
+        <button id="exportBtn">📥 تصدير إلى Excel</button>
       </div>
 
-      <p class="small" style="margin-top:12px;text-align:center"> HR Department <code></code></p>
+      <p class="small" style="margin-top:15px;text-align:center;color:#374151">
+        قسم الموارد البشرية - مترو أبو قير
+      </p>
     </div>
 
     <div id="confirmMsg" class="confirmation-message" role="status" aria-live="polite"></div>
@@ -90,28 +126,37 @@ let lastScannedId = null;
 let lastScannedAt = 0;
 const DEBOUNCE_MS = 1500;
 
-// Beep sound
+// Improved beep sound
 const beepBase64 = "UklGRuQAAABXQVZFZm10IBAAAAABAAEAgD4AAAB9AAACABAAZGF0YcQAAACAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICA=";
 const beepSound = new Audio("data:audio/wav;base64," + beepBase64);
-beepSound.volume = 1.0;
-function playBeep(){ try{ beepSound.currentTime = 0; beepSound.play(); }catch(e){ console.warn('beep failed', e); } try{ if(navigator.vibrate) navigator.vibrate(180); } catch(e){} }
+beepSound.volume = 0.7;
+
+function playBeep(){ 
+  try{ 
+    beepSound.currentTime = 0; 
+    beepSound.play(); 
+  }catch(e){ console.warn('beep failed', e); } 
+  try{ 
+    if(navigator.vibrate) navigator.vibrate(100); 
+  } catch(e){}
+}
 
 function showConfirmation(record){ 
   const msg = document.getElementById('confirmMsg');
   msg.textContent = `✅ تم تسجيل ${record.movement_type} لـ ${record.employee_id}`;
   msg.style.display = 'block'; 
-  setTimeout(()=>{ msg.style.display = 'none'; }, 2000); 
+  setTimeout(()=>{ msg.style.display = 'none'; }, 2500); 
 }
 
 function showError(message) {
   const msg = document.getElementById('errorMsg');
   msg.textContent = message;
   msg.style.display = 'block';
-  setTimeout(()=>{ msg.style.display = 'none'; }, 3000);
+  setTimeout(()=>{ msg.style.display = 'none'; }, 4000);
 }
 
 function updateCounter(){ 
-  document.getElementById('scanCount').innerText = 'عدد الحالات المسجلة: ' + scanCount; 
+  document.getElementById('scanCount').innerHTML = `عدد الحالات: <strong>${scanCount}</strong>`; 
   const pendingEl = document.getElementById('pendingCount');
   if (pendingRecords.length > 0) {
     pendingEl.textContent = pendingRecords.length;
@@ -121,20 +166,29 @@ function updateCounter(){
   }
 }
 
-function createLocalRecord(employeeId, movement){ 
+function createLocalRecord(employeeId, movement, source = 'QR'){ 
   const now = new Date();
   return { 
     id: `local-${Date.now()}-${Math.random().toString(36).slice(2,8)}`,
     employee_id: String(employeeId).trim(), 
     movement_type: movement, 
     timestamp: now.toISOString(),
-    source: 'QR'
+    source: source,
+    date: now.toISOString().split('T')[0],
+    time: now.toTimeString().split(' ')[0].substring(0,5)
   }; 
 }
 
 // Scanner functions
 function startScanner(){ 
   if(currentScanner) return; 
+  
+  const movement = document.getElementById('movementSelect').value; 
+  if(!movement){ 
+    showError('الرجاء اختيار نوع الحركة أولاً.');
+    return; 
+  }
+  
   const readerId = "reader"; 
   const html5Qr = new Html5Qrcode(readerId); 
   currentScanner = html5Qr; 
@@ -151,11 +205,11 @@ function startScanner(){
         html5Qr.stop().then(()=>{ 
           currentScanner = null; 
           handleScanned(qrCodeMessage); 
-          setTimeout(()=> startScanner(), 600); 
+          setTimeout(()=> startScanner(), 500); 
         }).catch(err=>{ 
           currentScanner = null; 
           handleScanned(qrCodeMessage); 
-          setTimeout(()=> startScanner(), 600); 
+          setTimeout(()=> startScanner(), 500); 
         });
       }, errorMessage => {}).catch(err=>{ 
         console.error('start failed', err); 
@@ -184,11 +238,6 @@ function stopScanner(){
 
 function handleScanned(qr){ 
   const movement = document.getElementById('movementSelect').value; 
-  if(!movement){ 
-    showError('الرجاء اختيار نوع الحركة أولاً.');
-    return; 
-  }
-  
   const record = createLocalRecord(qr, movement); 
   records.unshift(record);
   pendingRecords.push(record);
@@ -201,18 +250,18 @@ function handleScanned(qr){
 }
 
 function manualAdd(){ 
-  const val = document.getElementById('manualInput').value; 
+  const val = document.getElementById('manualInput').value.trim(); 
   const movement = document.getElementById('movementSelect').value; 
   if(!movement){ 
-    alert('اختر نوع الحركة أولاً'); 
+    showError('اختر نوع الحركة أولاً'); 
     return; 
   } 
-  if(!val || String(val).trim()===''){ 
-    alert('أدخل رقم أو اسم صالح'); 
+  if(!val){ 
+    showError('أدخل رقم أو اسم صالح'); 
     return; 
   } 
   
-  const record = createLocalRecord(val, movement); 
+  const record = createLocalRecord(val, movement, 'Manual'); 
   records.unshift(record);
   pendingRecords.push(record);
   scanCount++; 
@@ -228,6 +277,7 @@ function saveLocally(){
   try{ 
     localStorage.setItem('attendance_records_final', JSON.stringify(records));
     localStorage.setItem('pending_records_final', JSON.stringify(pendingRecords));
+    localStorage.setItem('scan_count_final', scanCount.toString());
   }catch(e){} 
 }
 
@@ -235,15 +285,11 @@ function loadLocally(){
   try{ 
     const s = localStorage.getItem('attendance_records_final');
     const p = localStorage.getItem('pending_records_final');
+    const c = localStorage.getItem('scan_count_final');
     
-    if(s){ 
-      records = JSON.parse(s); 
-      scanCount = records.length; 
-    }
-    
-    if(p) {
-      pendingRecords = JSON.parse(p);
-    }
+    if(s) records = JSON.parse(s); 
+    if(p) pendingRecords = JSON.parse(p);
+    if(c) scanCount = parseInt(c);
     
     updateCounter(); 
   }catch(e){} 
@@ -262,81 +308,71 @@ function exportToExcel(){
   
   data.forEach(r=>{ 
     const status = !pendingRecords.find(p => p.id === r.id) ? 'مزامن' : 'في الانتظار';
-    csv += [esc(r.id), esc(r.employee_id), esc(r.movement_type), esc(new Date(r.timestamp).toLocaleString('en-US',{hour12:false})), esc(r.source), esc(status)].join(',') + '\n'; 
+    csv += [esc(r.id), esc(r.employee_id), esc(r.movement_type), esc(new Date(r.timestamp).toLocaleString('ar-EG')), esc(r.source), esc(status)].join(',') + '\n'; 
   });
   
   const blob = new Blob(["\uFEFF" + csv], { type: 'text/csv;charset=utf-8;' }); 
   const a = document.createElement('a'); 
   a.href = URL.createObjectURL(blob); 
-  a.download = `Attendance_Records_${new Date().toISOString().slice(0,10)}.csv`; 
+  a.download = `سجلات_الحضور_${new Date().toISOString().slice(0,10)}.csv`; 
   document.body.appendChild(a); 
   a.click(); 
   a.remove(); 
 }
 
-// دالة محسنة تماماً لإرسال البيانات
+// Improved Google Apps Script communication
 function sendToGoogle(recordsToSend) {
+  if (!Array.isArray(recordsToSend) || recordsToSend.length === 0) return;
+
   if (!navigator.onLine) {
-    console.log('Offline - record saved locally only');
+    console.log('Offline - records saved locally, will sync when online');
     return;
   }
 
-  // التأكد من أن recordsToSend هي مصفوفة
-  if (!Array.isArray(recordsToSend)) {
-    recordsToSend = [recordsToSend];
-  }
-
-  console.log('Sending records to Google:', recordsToSend);
-
-  // الطريقة 1: إرسال كمصفوفة مباشرة (الأفضل)
-  const payload = JSON.stringify(recordsToSend);
+  const payload = {
+    action: 'saveRecords',
+    records: recordsToSend,
+    timestamp: new Date().toISOString(),
+    source: 'attendance_app'
+  };
 
   fetch(GOOGLE_SCRIPT_URL, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
     },
-    body: payload
+    body: JSON.stringify(payload)
   })
   .then(response => {
-    console.log('Response status:', response.status);
-    if (!response.ok) {
-      throw new Error(`HTTP error! status: ${response.status}`);
-    }
+    if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
     return response.json();
   })
   .then(result => {
     console.log('Server response:', result);
     if (result.success) {
-      // إزالة السجلات التي تمت مزامنتها بنجاح
       const syncedIds = result.saved_records.map(r => r.id);
       pendingRecords = pendingRecords.filter(record => !syncedIds.includes(record.id));
-      
       updateCounter();
       saveLocally();
-      console.log('Records synced successfully:', syncedIds.length);
       
-      if (recordsToSend.length === 1) {
-        showConfirmation({...recordsToSend[0], status: 'مزامن'});
+      if (syncedIds.length > 0) {
+        showConfirmation({movement_type: '', employee_id: `تمت مزامنة ${syncedIds.length} سجل`});
       }
     } else {
       console.error('Server reported error:', result.error);
-      showError(`خطأ في الخادم: ${result.error}`);
     }
   })
   .catch(error => {
     console.error('Network error:', error);
-    // الطريقة 2: محاولة بديلة باستخدام FormData
+    // Retry with FormData as fallback
     retryWithFormData(recordsToSend);
   });
 }
 
-// طريقة بديلة باستخدام FormData
 function retryWithFormData(recordsToSend) {
-  console.log('Retrying with FormData...');
-  
   const formData = new URLSearchParams();
-  formData.append('records_batch', JSON.stringify(recordsToSend));
+  formData.append('action', 'saveRecords');
+  formData.append('records', JSON.stringify(recordsToSend));
 
   fetch(GOOGLE_SCRIPT_URL, {
     method: 'POST',
@@ -347,7 +383,6 @@ function retryWithFormData(recordsToSend) {
   })
   .then(response => response.json())
   .then(result => {
-    console.log('FormData response:', result);
     if (result.success) {
       const syncedIds = result.saved_records.map(r => r.id);
       pendingRecords = pendingRecords.filter(record => !syncedIds.includes(record.id));
@@ -357,11 +392,9 @@ function retryWithFormData(recordsToSend) {
   })
   .catch(error => {
     console.error('FormData also failed:', error);
-    // السجلات ستبقى في pendingRecords للمحاولة لاحقاً
   });
 }
 
-// دالة المزامنة المحسنة
 function syncPendingRecords() {
   if (pendingRecords.length === 0) {
     showConfirmation({movement_type: '', employee_id: 'لا توجد سجلات في الانتظار للمزامنة'});
@@ -373,83 +406,34 @@ function syncPendingRecords() {
     return;
   }
 
+  const syncBtn = document.getElementById('syncBtn');
+  syncBtn.innerHTML = '⏳ جاري المزامنة...';
+  syncBtn.classList.add('sync-animation');
+
   showConfirmation({movement_type: '', employee_id: `جاري مزامنة ${pendingRecords.length} سجل...`});
 
-  console.log('Syncing pending records:', pendingRecords);
+  sendToGoogle(pendingRecords);
 
-  // استخدام الطريقة المباشرة
-  const payload = JSON.stringify(pendingRecords);
-
-  fetch(GOOGLE_SCRIPT_URL, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-    },
-    body: payload
-  })
-  .then(response => {
-    if (!response.ok) {
-      throw new Error(`HTTP error! status: ${response.status}`);
-    }
-    return response.json();
-  })
-  .then(result => {
-    console.log('Sync response:', result);
-    if (result.success) {
-      // إزالة السجلات التي تمت مزامنتها بنجاح
-      const syncedIds = result.saved_records.map(r => r.id);
-      pendingRecords = pendingRecords.filter(record => !syncedIds.includes(record.id));
-      
-      updateCounter();
-      saveLocally();
-      showConfirmation({movement_type: '', employee_id: `تمت مزامنة ${result.saved_count} سجل بنجاح`});
-    } else {
-      showError(`خطأ في المزامنة: ${result.error}`);
-    }
-  })
-  .catch(error => {
-    console.error('Sync error:', error);
-    // محاولة بـ FormData
-    const formData = new URLSearchParams();
-    formData.append('records_batch', JSON.stringify(pendingRecords));
-
-    fetch(GOOGLE_SCRIPT_URL, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/x-www-form-urlencoded',
-      },
-      body: formData
-    })
-    .then(response => response.json())
-    .then(result => {
-      if (result.success) {
-        const syncedIds = result.saved_records.map(r => r.id);
-        pendingRecords = pendingRecords.filter(record => !syncedIds.includes(record.id));
-        updateCounter();
-        saveLocally();
-        showConfirmation({movement_type: '', employee_id: `تمت مزامنة ${result.saved_count} سجل بنجاح`});
-      } else {
-        showError(`خطأ في المزامنة: ${result.error}`);
-      }
-    })
-    .catch(finalError => {
-      console.error('Final sync error:', finalError);
-      showError('فشل في المزامنة. تحقق من الاتصال وحاول مرة أخرى.');
-    });
-  });
+  setTimeout(() => {
+    syncBtn.innerHTML = '🔄 مزامنة';
+    syncBtn.classList.remove('sync-animation');
+  }, 3000);
 }
 
-// Init & Controls
+// Event Listeners
 document.getElementById('startBtn').addEventListener('click', startScanner);
 document.getElementById('stopBtn').addEventListener('click', stopScanner);
 document.getElementById('manualAddBtn').addEventListener('click', manualAdd);
 document.getElementById('exportBtn').addEventListener('click', exportToExcel);
 document.getElementById('syncBtn').addEventListener('click', syncPendingRecords);
+document.getElementById('manualInput').addEventListener('keypress', function(e) {
+  if (e.key === 'Enter') manualAdd();
+});
 
-// تحميل البيانات المحفوظة
+// Load saved data
 loadLocally();
 
-// Service Worker registration for PWA
+// PWA Service Worker
 if('serviceWorker' in navigator){ 
   window.addEventListener('load', ()=>{ 
     navigator.serviceWorker.register('service-worker.js')
@@ -458,19 +442,22 @@ if('serviceWorker' in navigator){
   }); 
 }
 
-// Update offline status and auto-sync when back online
+// Online/Offline status
 function updateOnlineStatus(){ 
   const el = document.getElementById('offlineStatus'); 
-  el.innerHTML = navigator.onLine ? 
-    '⚡<div style="font-size:11px;margin-top:6px">متصل</div>' : 
-    '⛔<div style="font-size:11px;margin-top:6px">غير متصل</div>'; 
-    
-  // المزامنة التلقائية عند استعادة الاتصال
-  if (navigator.onLine && pendingRecords.length > 0) {
-    setTimeout(() => {
-      showConfirmation({movement_type: '', employee_id: 'الاتصال متاح - جاري المزامنة التلقائية...'});
-      syncPendingRecords();
-    }, 2000);
+  const indicator = el.querySelector('.status-indicator');
+  
+  if (navigator.onLine) {
+    el.innerHTML = '⚡<div style="font-size:11px;margin-top:6px">متصل<span class="status-indicator status-online"></span></div>';
+    // Auto-sync when coming back online
+    if (pendingRecords.length > 0) {
+      setTimeout(() => {
+        showConfirmation({movement_type: '', employee_id: 'الاتصال متاح - جاري المزامنة التلقائية...'});
+        syncPendingRecords();
+      }, 2000);
+    }
+  } else {
+    el.innerHTML = '⛔<div style="font-size:11px;margin-top:6px">غير متصل<span class="status-indicator status-offline"></span></div>';
   }
 }
 
@@ -478,18 +465,19 @@ window.addEventListener('online', updateOnlineStatus);
 window.addEventListener('offline', updateOnlineStatus); 
 updateOnlineStatus();
 
-// اختبار الاتصال عند التحميل
+// Test connection on load
 window.addEventListener('load', function() {
-  fetch(GOOGLE_SCRIPT_URL + '?action=dayReport&day=2024-01-01')
+  // Set default movement type to "دخول"
+  document.getElementById('movementSelect').value = 'دخول';
+  
+  fetch(GOOGLE_SCRIPT_URL + '?action=test')
     .then(response => {
       if (response.ok) {
         console.log('Connection to Google Apps Script is working');
-      } else {
-        console.warn('Connection test failed');
       }
     })
     .catch(error => {
-      console.error('Connection test error:', error);
+      console.log('Connection test failed (might be offline)');
     });
 });
 </script>
