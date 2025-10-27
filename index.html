@@ -7,6 +7,7 @@
 <link rel="manifest" href="manifest.json">
 <meta name="theme-color" content="#10b981"/>
 <style>
+  /* الحفاظ على التنسيق الأصلي مع إضافات */
   body{font-family:Arial, sans-serif;background:#f3f4f6;color:#111;padding:0;margin:0;direction:rtl}
   .app{display:flex;min-height:100vh}
   .sidebar{width:72px;background:#06212a;color:#fff;display:flex;flex-direction:column;align-items:center;padding:12px;gap:12px}
@@ -18,12 +19,15 @@
   select,input[type=text]{padding:10px;border-radius:8px;border:1px solid #e5e7eb;font-size:15px}
   button{padding:10px 14px;border-radius:8px;border:none;background:#3b82f6;color:#fff;font-weight:600;cursor:pointer}
   #exportBtn{background:#06b6d4}
+  #syncBtn{background:#8b5cf6}
   #reader{width:100%;max-width:480px;margin:8px auto;border-radius:10px;overflow:hidden;background:#000}
   .confirmation-message{position:fixed;top:18px;left:50%;transform:translateX(-50%);background:rgba(16,185,129,0.97);color:#fff;padding:10px 18px;border-radius:10px;z-index:9999;display:none;font-weight:700}
+  .error-message{position:fixed;top:18px;left:50%;transform:translateX(-50%);background:rgba(239,68,68,0.97);color:#fff;padding:10px 18px;border-radius:10px;z-index:9999;display:none;font-weight:700}
   .counter{font-weight:700;color:#065f46}
   .manual-row{display:flex;gap:8px;justify-content:center;align-items:center;margin-top:10px;flex-wrap:wrap}
   .small{font-size:13px;color:#6b7280}
   .link-icon{writing-mode:vertical-rl;transform:rotate(180deg);font-weight:700}
+  .pending-badge{background:#f59e0b;color:white;padding:2px 6px;border-radius:10px;font-size:11px;margin-left:5px}
   @media (max-width:720px){ .sidebar{display:flex;width:56px} }
 </style>
 </head>
@@ -47,10 +51,11 @@
           <option value="انصراف مسائي">انصراف مسائي</option>
         </select>
 
-        <div class="counter" id="scanCount">عدد الحالات المسجلة: 0</div>
+        <div class="counter" id="scanCount">عدد الحالات المسجلة: 0 <span id="pendingCount" class="pending-badge" style="display:none">0</span></div>
 
         <button id="stopBtn" style="background:#ef4444">إيقاف الماسح</button>
         <button id="startBtn" style="background:#10b981">تشغيل الماسح</button>
+        <button id="syncBtn">مزامنة</button>
       </div>
 
       <div id="reader" aria-live="polite"></div>
@@ -68,22 +73,23 @@
     </div>
 
     <div id="confirmMsg" class="confirmation-message" role="status" aria-live="polite"></div>
+    <div id="errorMsg" class="error-message" role="alert" aria-live="polite"></div>
   </main>
 </div>
 
 <script src="https://unpkg.com/html5-qrcode"></script>
 <script>
 // ---------------- CONFIG ----------------
-// ضع هنا رابط Web App الخاص بك (Apps Script) — عدّله إلى رابطك قبل النشر
-const GOOGLE_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbypVU6KlNGpSevWO1GYgGi16SDMKue3GVK2dmNWcVg6581ifsIsjU5F1P5aD595CN_bxg/exec';
+const GOOGLE_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzfqoW5rM3wcJmC84sfI2l_JlF2guWHirOnAvy33dhXbFIgFzkh94TIZ6huATejBxkVIg/exec';
 
 // ---------------- State ----------------
 let records = [];
+let pendingRecords = [];
 let scanCount = 0;
 let currentScanner = null;
 let lastScannedId = null;
 let lastScannedAt = 0;
-const DEBOUNCE_MS = 1500; // منع التكرار السريع
+const DEBOUNCE_MS = 1500;
 
 // Beep sound
 const beepBase64 = "UklGRuQAAABXQVZFZm10IBAAAAABAAEAgD4AAAB9AAACABAAZGF0YcQAAACAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICA=";
@@ -91,40 +97,188 @@ const beepSound = new Audio("data:audio/wav;base64," + beepBase64);
 beepSound.volume = 1.0;
 function playBeep(){ try{ beepSound.currentTime = 0; beepSound.play(); }catch(e){ console.warn('beep failed', e); } try{ if(navigator.vibrate) navigator.vibrate(180); } catch(e){} }
 
-function showConfirmation(record){ const msg = document.getElementById('confirmMsg'); msg.textContent = `✅ تم تسجيل ${record.movement} لـ ${record.name}`; msg.style.display = 'block'; setTimeout(()=>{ msg.style.display = 'none'; }, 2000); }
+function showConfirmation(record){ 
+  const msg = document.getElementById('confirmMsg');
+  msg.textContent = `✅ تم تسجيل ${record.movement} لـ ${record.name}`;
+  msg.style.display = 'block'; 
+  setTimeout(()=>{ msg.style.display = 'none'; }, 2000); 
+}
 
-function updateCounter(){ document.getElementById('scanCount').innerText = 'عدد الحالات المسجلة: ' + scanCount; }
+function showError(message) {
+  const msg = document.getElementById('errorMsg');
+  msg.textContent = message;
+  msg.style.display = 'block';
+  setTimeout(()=>{ msg.style.display = 'none'; }, 3000);
+}
 
-function createLocalRecord(employeeId, movement){ const now = new Date(); return { id: `local-${Date.now()}-${Math.random().toString(36).slice(2,8)}`, name: String(employeeId).trim(), movement: movement, timestamp: now.toISOString(), date: now.toLocaleDateString('ar-EG'), time: now.toLocaleTimeString('ar-EG'), source: 'QR' }; }
+function updateCounter(){ 
+  document.getElementById('scanCount').innerText = 'عدد الحالات المسجلة: ' + scanCount; 
+  const pendingEl = document.getElementById('pendingCount');
+  if (pendingRecords.length > 0) {
+    pendingEl.textContent = pendingRecords.length;
+    pendingEl.style.display = 'inline';
+  } else {
+    pendingEl.style.display = 'none';
+  }
+}
 
-// Scanner functions (مثل الأصلية)
-function startScanner(){ if(currentScanner) return; const readerId = "reader"; const html5Qr = new Html5Qrcode(readerId); currentScanner = html5Qr; const config = { fps: 10, qrbox: { width: 250, height: 250 } };
+function createLocalRecord(employeeId, movement){ 
+  const now = new Date();
+  return { 
+    id: `local-${Date.now()}-${Math.random().toString(36).slice(2,8)}`,
+    name: String(employeeId).trim(), 
+    movement: movement, 
+    timestamp: now.toISOString(),
+    date: now.toLocaleDateString('ar-EG'), 
+    time: now.toLocaleTimeString('ar-EG'), 
+    source: 'QR',
+    synced: false
+  }; 
+}
+
+// Scanner functions
+function startScanner(){ 
+  if(currentScanner) return; 
+  const readerId = "reader"; 
+  const html5Qr = new Html5Qrcode(readerId); 
+  currentScanner = html5Qr; 
+  const config = { fps: 10, qrbox: { width: 250, height: 250 } };
+  
   Html5Qrcode.getCameras().then(devices => {
     if(devices && devices.length){
       const rear = devices.find(d => (d.label||'').toLowerCase().includes('back') || (d.label||'').toLowerCase().includes('rear')) || devices[0];
       html5Qr.start(rear.id || { facingMode: "environment" }, config, qrCodeMessage => {
         const now = Date.now();
         if(qrCodeMessage === lastScannedId && (now - lastScannedAt) < DEBOUNCE_MS) return;
-        lastScannedId = qrCodeMessage; lastScannedAt = now;
-        html5Qr.stop().then(()=>{ currentScanner = null; handleScanned(qrCodeMessage); setTimeout(()=> startScanner(), 600); }).catch(err=>{ currentScanner = null; handleScanned(qrCodeMessage); setTimeout(()=> startScanner(), 600); });
-      }, errorMessage => {}).catch(err=>{ console.error('start failed', err); const msg = document.getElementById('confirmMsg'); msg.textContent = 'خطأ: لا يمكن الوصول إلى الكاميرا. تأكد من الأذونات.'; msg.style.display = 'block'; setTimeout(()=> msg.style.display='none',3000); });
-    } else { const msg = document.getElementById('confirmMsg'); msg.textContent = 'خطأ: لم يتم العثور على كاميرا.'; msg.style.display = 'block'; setTimeout(()=> msg.style.display='none',3000); }
-  }).catch(err=>{ console.error('cameras error', err); }); }
+        lastScannedId = qrCodeMessage; 
+        lastScannedAt = now;
+        html5Qr.stop().then(()=>{ 
+          currentScanner = null; 
+          handleScanned(qrCodeMessage); 
+          setTimeout(()=> startScanner(), 600); 
+        }).catch(err=>{ 
+          currentScanner = null; 
+          handleScanned(qrCodeMessage); 
+          setTimeout(()=> startScanner(), 600); 
+        });
+      }, errorMessage => {}).catch(err=>{ 
+        console.error('start failed', err); 
+        showError('خطأ: لا يمكن الوصول إلى الكاميرا. تأكد من الأذونات.');
+      });
+    } else { 
+      showError('خطأ: لم يتم العثور على كاميرا.');
+    }
+  }).catch(err=>{ 
+    console.error('cameras error', err); 
+    showError('خطأ في الوصول للكاميرا');
+  }); 
+}
 
-function stopScanner(){ if(!currentScanner) return; currentScanner.stop().then(()=>{ try{ currentScanner.clear(); }catch(e){}; currentScanner = null; const msg = document.getElementById('confirmMsg'); msg.textContent = 'تم إيقاف الماسح.'; msg.style.display = 'block'; setTimeout(()=> msg.style.display='none',1500); }).catch(err=>{ console.warn('stop err', err); currentScanner = null; }); }
+function stopScanner(){ 
+  if(!currentScanner) return; 
+  currentScanner.stop().then(()=>{ 
+    try{ currentScanner.clear(); }catch(e){}; 
+    currentScanner = null; 
+    showConfirmation({movement: '', name: 'تم إيقاف الماسح.'});
+  }).catch(err=>{ 
+    console.warn('stop err', err); 
+    currentScanner = null; 
+  }); 
+}
 
-function handleScanned(qr){ const movement = document.getElementById('movementSelect').value; if(!movement){ const msg = document.getElementById('confirmMsg'); msg.textContent = 'الرجاء اختيار نوع الحركة أولاً.'; msg.style.display = 'block'; setTimeout(()=> msg.style.display='none',1800); return; }
-  const record = createLocalRecord(qr, movement); records.unshift(record); scanCount++; updateCounter(); saveLocally(); sendToGoogle(record); playBeep(); showConfirmation(record); }
+function handleScanned(qr){ 
+  const movement = document.getElementById('movementSelect').value; 
+  if(!movement){ 
+    showError('الرجاء اختيار نوع الحركة أولاً.');
+    return; 
+  }
+  
+  const record = createLocalRecord(qr, movement); 
+  records.unshift(record);
+  pendingRecords.push(record);
+  scanCount++; 
+  updateCounter(); 
+  saveLocally(); 
+  sendToGoogle(record); 
+  playBeep(); 
+  showConfirmation(record); 
+}
 
-function manualAdd(){ const val = document.getElementById('manualInput').value; const movement = document.getElementById('movementSelect').value; if(!movement){ alert('اختر نوع الحركة أولاً'); return; } if(!val || String(val).trim()===''){ alert('أدخل رقم أو اسم صالح'); return; } const record = createLocalRecord(val, movement); records.unshift(record); scanCount++; updateCounter(); saveLocally(); sendToGoogle(record); playBeep(); showConfirmation(record); document.getElementById('manualInput').value=''; }
+function manualAdd(){ 
+  const val = document.getElementById('manualInput').value; 
+  const movement = document.getElementById('movementSelect').value; 
+  if(!movement){ 
+    alert('اختر نوع الحركة أولاً'); 
+    return; 
+  } 
+  if(!val || String(val).trim()===''){ 
+    alert('أدخل رقم أو اسم صالح'); 
+    return; 
+  } 
+  
+  const record = createLocalRecord(val, movement); 
+  records.unshift(record);
+  pendingRecords.push(record);
+  scanCount++; 
+  updateCounter(); 
+  saveLocally(); 
+  sendToGoogle(record); 
+  playBeep(); 
+  showConfirmation(record); 
+  document.getElementById('manualInput').value=''; 
+}
 
-function saveLocally(){ try{ localStorage.setItem('attendance_records_v3', JSON.stringify(records)); }catch(e){} }
-function loadLocally(){ try{ const s = localStorage.getItem('attendance_records_v3'); if(s){ records = JSON.parse(s); scanCount = records.length; updateCounter(); } }catch(e){} }
+function saveLocally(){ 
+  try{ 
+    localStorage.setItem('attendance_records_v4', JSON.stringify(records));
+    localStorage.setItem('pending_records_v4', JSON.stringify(pendingRecords));
+  }catch(e){} 
+}
 
-function exportToExcel(){ const data = records.slice().sort((a,b)=> new Date(b.timestamp) - new Date(a.timestamp)); const headers = ['معرف السجل','رمز الموظف','نوع الحركة','الوقت','المصدر']; let csv = headers.join(',') + '\n'; const esc = v => { if(v==null) return ''; let s = String(v); if(s.includes(',')||s.includes('\n')||s.includes('"')) return '"' + s.replace(/"/g,'""') + '"'; return s; };
-  data.forEach(r=>{ csv += [esc(r.id), esc(r.name), esc(r.movement), esc(new Date(r.timestamp).toLocaleString('en-US',{hour12:false})), esc(r.source)].join(',') + '\n'; });
-  const blob = new Blob(["\uFEFF" + csv], { type: 'text/csv;charset=utf-8;' }); const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = `Attendance_Records_${new Date().toISOString().slice(0,10)}.csv`; document.body.appendChild(a); a.click(); a.remove(); }
+function loadLocally(){ 
+  try{ 
+    const s = localStorage.getItem('attendance_records_v4');
+    const p = localStorage.getItem('pending_records_v4');
+    
+    if(s){ 
+      records = JSON.parse(s); 
+      scanCount = records.length; 
+    }
+    
+    if(p) {
+      pendingRecords = JSON.parse(p);
+    }
+    
+    updateCounter(); 
+  }catch(e){} 
+}
 
+function exportToExcel(){ 
+  const data = records.slice().sort((a,b)=> new Date(b.timestamp) - new Date(a.timestamp)); 
+  const headers = ['معرف السجل','رمز الموظف','نوع الحركة','الوقت','المصدر', 'الحالة']; 
+  let csv = headers.join(',') + '\n'; 
+  const esc = v => { 
+    if(v==null) return ''; 
+    let s = String(v); 
+    if(s.includes(',')||s.includes('\n')||s.includes('"')) return '"' + s.replace(/"/g,'""') + '"'; 
+    return s; 
+  };
+  
+  data.forEach(r=>{ 
+    const status = r.synced ? 'مزامن' : 'في الانتظار';
+    csv += [esc(r.id), esc(r.name), esc(r.movement), esc(new Date(r.timestamp).toLocaleString('en-US',{hour12:false})), esc(r.source), esc(status)].join(',') + '\n'; 
+  });
+  
+  const blob = new Blob(["\uFEFF" + csv], { type: 'text/csv;charset=utf-8;' }); 
+  const a = document.createElement('a'); 
+  a.href = URL.createObjectURL(blob); 
+  a.download = `Attendance_Records_${new Date().toISOString().slice(0,10)}.csv`; 
+  document.body.appendChild(a); 
+  a.click(); 
+  a.remove(); 
+}
+
+// دالة محسنة لإرسال البيانات
 function sendToGoogle(record) {
   try {
     const data = {
@@ -137,7 +291,6 @@ function sendToGoogle(record) {
       }])
     };
 
-    // استخدام fetch عادي مع CORS
     fetch(GOOGLE_SCRIPT_URL, {
       method: 'POST',
       headers: {
@@ -148,25 +301,78 @@ function sendToGoogle(record) {
     .then(response => response.json())
     .then(result => {
       console.log('Success:', result);
-      if (!result.success) {
+      if (result.success) {
+        // تحديث حالة السجل كمزامن
+        record.synced = true;
+        const index = pendingRecords.findIndex(r => r.id === record.id);
+        if (index !== -1) {
+          pendingRecords.splice(index, 1);
+        }
+        updateCounter();
+        saveLocally();
+      } else {
         console.error('Server error:', result.error);
       }
     })
     .catch(error => {
       console.error('Error sending data:', error);
-      // Fallback: حاول مع navigator.sendBeacon
-      try {
-        const blob = new Blob([new URLSearchParams(data).toString()], { 
-          type: 'application/x-www-form-urlencoded' 
-        });
-        navigator.sendBeacon(GOOGLE_SCRIPT_URL, blob);
-      } catch (beaconError) {
-        console.error('Beacon also failed:', beaconError);
-      }
+      // سيتم إعادة المحاولة عند المزامنة
     });
   } catch(e) {
     console.error('Error in sendToGoogle:', e);
   }
+}
+
+// دالة المزامنة
+function syncPendingRecords() {
+  if (pendingRecords.length === 0) {
+    showConfirmation({movement: '', name: 'لا توجد سجلات في الانتظار للمزامنة'});
+    return;
+  }
+
+  if (!navigator.onLine) {
+    showError('لا يوجد اتصال بالإنترنت. لا يمكن المزامنة.');
+    return;
+  }
+
+  showConfirmation({movement: '', name: `جاري مزامنة ${pendingRecords.length} سجل...`});
+
+  const data = {
+    records_batch: JSON.stringify(pendingRecords.map(r => ({
+      id: r.id,
+      employee_id: r.name,
+      movement_type: r.movement,
+      timestamp: r.timestamp,
+      source: r.source
+    })))
+  };
+
+  fetch(GOOGLE_SCRIPT_URL, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/x-www-form-urlencoded',
+    },
+    body: new URLSearchParams(data)
+  })
+  .then(response => response.json())
+  .then(result => {
+    if (result.success) {
+      // تحديث جميع السجلات كمزامنة
+      pendingRecords.forEach(record => {
+        record.synced = true;
+      });
+      pendingRecords = [];
+      updateCounter();
+      saveLocally();
+      showConfirmation({movement: '', name: `تمت مزامنة ${result.saved_count} سجل بنجاح`});
+    } else {
+      showError(`خطأ في المزامنة: ${result.error}`);
+    }
+  })
+  .catch(error => {
+    console.error('Sync error:', error);
+    showError('فشل في المزامنة. تحقق من الاتصال وحاول مرة أخرى.');
+  });
 }
 
 // Init & Controls
@@ -174,15 +380,35 @@ document.getElementById('startBtn').addEventListener('click', startScanner);
 document.getElementById('stopBtn').addEventListener('click', stopScanner);
 document.getElementById('manualAddBtn').addEventListener('click', manualAdd);
 document.getElementById('exportBtn').addEventListener('click', exportToExcel);
+document.getElementById('syncBtn').addEventListener('click', syncPendingRecords);
 
 loadLocally();
 
-// Service Worker registration for PWA (if hosted)
-if('serviceWorker' in navigator){ window.addEventListener('load', ()=>{ navigator.serviceWorker.register('service-worker.js').then(()=>console.log('SW registered')).catch(()=>{}); }); }
+// Service Worker registration for PWA
+if('serviceWorker' in navigator){ 
+  window.addEventListener('load', ()=>{ 
+    navigator.serviceWorker.register('service-worker.js')
+      .then(()=>console.log('SW registered'))
+      .catch(()=>{}); 
+  }); 
+}
 
-// Update offline status in sidebar
-function updateOnlineStatus(){ const el = document.getElementById('offlineStatus'); el.innerHTML = navigator.onLine ? '⚡<div style="font-size:11px;margin-top:6px">متصل</div>' : '⛔<div style="font-size:11px;margin-top:6px">غير متصل</div>'; }
-window.addEventListener('online', updateOnlineStatus); window.addEventListener('offline', updateOnlineStatus); updateOnlineStatus();
+// Update offline status and auto-sync when back online
+function updateOnlineStatus(){ 
+  const el = document.getElementById('offlineStatus'); 
+  el.innerHTML = navigator.onLine ? 
+    '⚡<div style="font-size:11px;margin-top:6px">متصل</div>' : 
+    '⛔<div style="font-size:11px;margin-top:6px">غير متصل</div>'; 
+    
+  // المزامنة التلقائية عند استعادة الاتصال
+  if (navigator.onLine && pendingRecords.length > 0) {
+    setTimeout(syncPendingRecords, 1000);
+  }
+}
+
+window.addEventListener('online', updateOnlineStatus); 
+window.addEventListener('offline', updateOnlineStatus); 
+updateOnlineStatus();
 </script>
 </body>
 </html>
