@@ -1,172 +1,257 @@
 <!DOCTYPE html>
 <html lang="ar" dir="rtl">
 <head>
-    <meta charset="UTF-8">
-    <title>تقارير الحضور</title>
+    <meta charset="utf-8">
+    <title>تقارير الحضور — محدث</title>
     <style>
-        body { font-family: 'Tajawal', sans-serif; background: #f5f5f5; margin: 0; padding: 0; }
-        header { background: #007bff; color: white; padding: 15px; text-align: center; font-size: 22px; }
-        section { padding: 20px; }
-        .report-box { background: white; padding: 15px; border-radius: 10px; margin-bottom: 20px; box-shadow: 0 2px 5px rgba(0,0,0,.1); }
-        input, button, select { padding: 8px; margin: 5px; border-radius: 5px; border: 1px solid #ccc; }
-        button { cursor: pointer; background: #007bff; color: white; }
-        table { width: 100%; border-collapse: collapse; margin-top: 15px; }
-        th, td { border: 1px solid #ddd; padding: 8px; text-align: center; }
-        th { background: #007bff; color: white; }
+        body{font-family:Arial, sans-serif;background:#f5f7fb;color:#111;margin:0;padding:0;direction:rtl}
+        header{background:#0b5fff;color:#fff;padding:14px;text-align:center;font-size:20px}
+        .container{max-width:1100px;margin:18px auto;padding:12px}
+        .card{background:#fff;padding:14px;border-radius:10px;box-shadow:0 6px 18px rgba(0,0,0,0.06);margin-bottom:14px}
+        .row{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+        label{font-weight:700}
+        input,select,button{padding:8px;border-radius:6px;border:1px solid #e2e8f0}
+        button{background:#0b5fff;color:#fff;border:none;cursor:pointer}
+        table{width:100%;border-collapse:collapse;margin-top:12px}
+        th,td{padding:8px;border:1px solid #e6eef7;text-align:center}
+        th{background:#0b5fff;color:#fff}
+        .muted{color:#6b7280;font-size:13px}
+        .export-btn{background:#059669}
     </style>
 </head>
 <body>
-<header>📊 تقارير نظام الحضور</header>
+<header>نظام الحضور — التقارير</header>
+<div class="container">
 
-<section>
-    <!-- ✅ تقرير موظف (فترة زمنية) -->
-    <div class="report-box">
-        <h3>تقرير موظف</h3>
-        <label>رمز الموظف:</label>
-        <input type="text" id="empId">
-        <label>من:</label>
-        <input type="date" id="fromDate">
-        <label>إلى:</label>
-        <input type="date" id="toDate">
-        <button onclick="getSingleReport()">عرض التقرير</button>
-        <div id="singleResult"></div>
+  <div class="card">
+    <h3>تقرير موظف (فترة)</h3>
+    <div class="row">
+      <label>اختر الموظف:</label>
+      <select id="employeeSelect"><option value="">-- تحميل القائمة --</option></select>
+      <label>من:</label><input type="date" id="fromDate">
+      <label>إلى:</label><input type="date" id="toDate">
+      <button id="btnSingle">عرض</button>
+      <button id="exportSingle" class="export-btn">تصدير CSV</button>
     </div>
+    <div id="singleReportArea" style="margin-top:12px"></div>
+  </div>
 
-    <!-- ✅ تقرير يوم كامل -->
-    <div class="report-box">
-        <h3>تقرير يوم لجميع الموظفين</h3>
-        <label>التاريخ:</label>
-        <input type="date" id="dayReport">
-        <button onclick="getDayReport()">عرض التقرير</button>
-        <div id="dayResult"></div>
+  <div class="card">
+    <h3>تقرير يوم</h3>
+    <div class="row">
+      <label>التاريخ:</label><input type="date" id="dayDate">
+      <button id="btnDay">عرض</button>
+      <button id="exportDay" class="export-btn">تصدير CSV</button>
     </div>
+    <div id="dayReportArea" style="margin-top:12px"></div>
+  </div>
 
-    <!-- ✅ تقرير فترة مجمع -->
-    <div class="report-box">
-        <h3>تقرير مجمع لفترة زمنية</h3>
-        <label>من:</label>
-        <input type="date" id="fromPeriod">
-        <label>إلى:</label>
-        <input type="date" id="toPeriod">
-        <button onclick="getPeriodReport()">عرض التقرير</button>
-        <div id="periodResult"></div>
+  <div class="card">
+    <h3>تقرير مجمع (فترة)</h3>
+    <div class="row">
+      <label>من:</label><input type="date" id="pFrom">
+      <label>إلى:</label><input type="date" id="pTo">
+      <button id="btnPeriod">عرض</button>
+      <button id="exportPeriod" class="export-btn">تصدير CSV</button>
     </div>
-</section>
+    <div id="periodReportArea" style="margin-top:12px"></div>
+  </div>
+
+</div>
 
 <script>
-    const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycby6wK8UL3s17B-1D9wTrIh7XddUNIgr3VVJtoGaA8qk1-LkYvCGs3l9fvfFyizMH1dI_w/exec";
+  // ضع هنا رابط Web App الذي تحصلت عليه بعد نشر Apps Script
+  const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwynEAll3ZSKF18vjpPeRAYWQrUChkqcFxshVMg0TJXJXjAWVzEbXIuj0koUTs5eFPYUg/exec";
 
-    /* ✅ 1. تقرير موظف */
-    function getSingleReport() {
-        const emp = document.getElementById("empId").value;
-        const from = document.getElementById("fromDate").value;
-        const to = document.getElementById("toDate").value;
-
-        if(!emp || !from || !to){
-            alert("⚠ يرجى إدخال جميع البيانات");
-            return;
-        }
-
-        fetch(`${GOOGLE_SCRIPT_URL}?action=singleReport&employee_id=${emp}&from=${from}&to=${to}`)
-        .then(res => res.json())
-        .then(data => {
-            if(data.status !== "ok") {
-                document.getElementById("singleResult").innerHTML = `<p>⚠ لا توجد بيانات</p>`;
-                return;
-            }
-
-            let html = `<table>
-                <tr>
-                    <th>التاريخ</th>
-                    <th>رمز الموظف</th>
-                    <th>أول دخول</th>
-                    <th>آخر خروج</th>
-                    <th>ساعات العمل</th>
-                    <th>ساعات إضافية</th>
-                </tr>`;
-
-            data.days.forEach(d => {
-                html += `<tr>
-                    <td>${d.date}</td>
-                    <td>${d.employee_id}</td>
-                    <td>${d.first_in || '-'}</td>
-                    <td>${d.last_out || '-'}</td>
-                    <td>${d.work_hours?.toFixed(2) || '0'}</td>
-                    <td>${d.overtime_hours?.toFixed(2) || '0'}</td>
-                </tr>`;
-            });
-
-            html += `</table>
-            <p>✅ إجمالي أيام الحضور: <b>${data.total_days_present}</b></p>
-            <p>⏱ إجمالي ساعات العمل: <b>${data.total_work_hours.toFixed(2)}</b></p>
-            <p>➕ إجمالي الساعات الإضافية: <b>${data.total_overtime_hours.toFixed(2)}</b></p>`;
-
-            document.getElementById("singleResult").innerHTML = html;
-        });
+  // Helper: fetch JSON with error handling
+  async function api(action, params){
+    const url = new URL(GOOGLE_SCRIPT_URL);
+    url.searchParams.set('action', action);
+    Object.keys(params||{}).forEach(k=> url.searchParams.set(k, params[k]));
+    try{
+      const res = await fetch(url);
+      if(!res.ok) throw new Error('HTTP ' + res.status);
+      return await res.json();
+    }catch(err){
+      console.error(err);
+      alert('خطأ في الوصول إلى الخادم. تأكد أن Web App منشور وأن الرابط صحيح.');
+      return null;
     }
+  }
 
-    /* ✅ 2. تقرير يوم */
-    function getDayReport() {
-        const day = document.getElementById("dayReport").value;
-        if(!day){ alert("⚠ اختر تاريخاً"); return; }
-
-        fetch(`${GOOGLE_SCRIPT_URL}?action=dayReport&day=${day}`)
-        .then(res => res.json())
-        .then(data => {
-            let html = `<table>
-                <tr>
-                    <th>رمز الموظف</th>
-                    <th>أول دخول</th>
-                    <th>آخر خروج</th>
-                    <th>ساعات العمل</th>
-                    <th>ساعات إضافية</th>
-                </tr>`;
-
-            data.forEach(d => {
-                html += `<tr>
-                    <td>${d.employee_id}</td>
-                    <td>${d.first_in || '-'}</td>
-                    <td>${d.last_out || '-'}</td>
-                    <td>${d.work_hours?.toFixed(2) || '0'}</td>
-                    <td>${d.overtime_hours?.toFixed(2) || '0'}</td>
-                </tr>`;
-            });
-
-            html += `</table>`;
-            document.getElementById("dayResult").innerHTML = html;
-        });
+  // Populate employee dropdown
+  async function loadEmployees(){
+    const data = await api('listEmployees', {});
+    const sel = document.getElementById('employeeSelect');
+    sel.innerHTML = '<option value=\"\">-- اختر موظف --</option>';
+    if(Array.isArray(data)){
+      data.forEach(id => {
+        const opt = document.createElement('option'); opt.value = id; opt.textContent = id; sel.appendChild(opt);
+      });
+    } else {
+      console.warn('no employees list');
     }
+  }
 
-    /* ✅ 3. تقرير فترة مجمع */
-    function getPeriodReport() {
-        const from = document.getElementById("fromPeriod").value;
-        const to = document.getElementById("toPeriod").value;
+  // Utility: convert array of objects to CSV
+  function objectArrayToCSV(rows){
+    if(!rows || !rows.length) return '';
+    const keys = Object.keys(rows[0]);
+    const lines = [];
+    lines.push(keys.join(','));
+    rows.forEach(r=>{
+      const vals = keys.map(k=>{
+        let v = r[k];
+        if(v == null) v = '';
+        v = String(v).replace(/"/g, '""');
+        if(v.includes(',') || v.includes('\n')) v = `"${v}"`;
+        return v;
+      });
+      lines.push(vals.join(','));
+    });
+    return lines.join('\r\n');
+  }
 
-        fetch(`${GOOGLE_SCRIPT_URL}?action=periodReport&from=${from}&to=${to}`)
-        .then(res => res.json())
-        .then(data => {
-            let html = `<table>
-                <tr>
-                    <th>رمز الموظف</th>
-                    <th>عدد أيام الحضور</th>
-                    <th>إجمالي ساعات العمل</th>
-                    <th>إجمالي أوفر تايم</th>
-                </tr>`;
+  function downloadCSV(filename, csv){
+    const blob = new Blob(["\uFEFF" + csv], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a'); a.href = url; a.download = filename; document.body.appendChild(a); a.click(); a.remove();
+    URL.revokeObjectURL(url);
+  }
 
-            for(let emp in data){
-                html += `<tr>
-                    <td>${emp}</td>
-                    <td>${data[emp].days_present}</td>
-                    <td>${data[emp].total_work_hours.toFixed(2)}</td>
-                    <td>${data[emp].total_overtime_hours.toFixed(2)}</td>
-                </tr>`;
-            }
+  /* ====== Single Report (Employee) ====== */
+  document.getElementById('btnSingle').addEventListener('click', async ()=>{
+    const emp = document.getElementById('employeeSelect').value;
+    const from = document.getElementById('fromDate').value;
+    const to = document.getElementById('toDate').value;
+    if(!emp || !from || !to){ alert('اختر موظفاً والفترة'); return; }
+    const data = await api('singleReport', { employee_id: emp, from: from, to: to });
+    if(!data || data.status !== 'ok'){ document.getElementById('singleReportArea').innerHTML = '<p class=\"muted\">لا توجد بيانات</p>'; return; }
 
-            html += `</table>`;
-            document.getElementById("periodResult").innerHTML = html;
-        });
-    }
+    // Build table
+    let html = `<table><thead><tr>
+      <th>التاريخ</th><th>رمز الموظف</th><th>أول دخول</th><th>آخر خروج</th><th>ساعات العمل</th><th>ساعات إضافية</th>
+    </tr></thead><tbody>`;
+    const rowsForCSV = [];
+    data.days.forEach(d=>{
+      html += `<tr>
+        <td>${d.date}</td>
+        <td>${d.employee_id}</td>
+        <td>${d.first_in || '-'}</td>
+        <td>${d.last_out || '-'}</td>
+        <td>${(d.work_hours != null) ? d.work_hours.toFixed(2) : '0.00'}</td>
+        <td>${(d.overtime_hours != null) ? d.overtime_hours.toFixed(2) : '0.00'}</td>
+      </tr>`;
+      rowsForCSV.push({
+        date: d.date,
+        employee_id: d.employee_id,
+        first_in: d.first_in || '',
+        last_out: d.last_out || '',
+        work_hours: (d.work_hours != null) ? d.work_hours.toFixed(4) : '',
+        overtime_hours: (d.overtime_hours != null) ? d.overtime_hours.toFixed(4) : ''
+      });
+    });
+    html += `</tbody></table>
+      <p>✅ إجمالي أيام الحضور: <b>${data.total_days_present}</b></p>
+      <p>⏱ إجمالي ساعات العمل: <b>${Number(data.total_work_hours).toFixed(2)}</b></p>
+      <p>➕ إجمالي الساعات الإضافية: <b>${Number(data.total_overtime_hours).toFixed(2)}</b></p>`;
+    document.getElementById('singleReportArea').innerHTML = html;
+
+    // store for export
+    document.getElementById('exportSingle').dataset.csv = objectArrayToCSV(rowsForCSV);
+    document.getElementById('exportSingle').dataset.filename = `single_report_${emp}_${from}_${to}.csv`;
+  });
+
+  document.getElementById('exportSingle').addEventListener('click', ()=>{
+    const csv = document.getElementById('exportSingle').dataset.csv;
+    const filename = document.getElementById('exportSingle').dataset.filename || 'single_report.csv';
+    if(!csv){ alert('لا توجد بيانات للتصدير'); return; }
+    downloadCSV(filename, csv);
+  });
+
+  /* ====== Day Report ====== */
+  document.getElementById('btnDay').addEventListener('click', async ()=>{
+    const day = document.getElementById('dayDate').value;
+    if(!day){ alert('اختر تاريخاً'); return; }
+    const data = await api('dayReport', { day: day });
+    if(!data){ document.getElementById('dayReportArea').innerHTML = '<p class=\"muted\">لا توجد بيانات</p>'; return; }
+
+    let html = `<table><thead><tr>
+      <th>رمز الموظف</th><th>أول دخول</th><th>آخر خروج</th><th>ساعات العمل</th><th>ساعات إضافية</th>
+    </tr></thead><tbody>`;
+    const rowsForCSV = [];
+    data.forEach(d=>{
+      html += `<tr>
+        <td>${d.employee_id}</td>
+        <td>${d.first_in || '-'}</td>
+        <td>${d.last_out || '-'}</td>
+        <td>${(d.work_hours != null) ? d.work_hours.toFixed(2) : '0.00'}</td>
+        <td>${(d.overtime_hours != null) ? d.overtime_hours.toFixed(2) : '0.00'}</td>
+      </tr>`;
+      rowsForCSV.push({
+        employee_id: d.employee_id,
+        first_in: d.first_in || '',
+        last_out: d.last_out || '',
+        work_hours: (d.work_hours != null) ? d.work_hours.toFixed(4) : '',
+        overtime_hours: (d.overtime_hours != null) ? d.overtime_hours.toFixed(4) : ''
+      });
+    });
+    html += `</tbody></table>`;
+    document.getElementById('dayReportArea').innerHTML = html;
+    document.getElementById('exportDay').dataset.csv = objectArrayToCSV(rowsForCSV);
+    document.getElementById('exportDay').dataset.filename = `day_report_${day}.csv`;
+  });
+
+  document.getElementById('exportDay').addEventListener('click', ()=>{
+    const csv = document.getElementById('exportDay').dataset.csv;
+    const filename = document.getElementById('exportDay').dataset.filename || 'day_report.csv';
+    if(!csv){ alert('لا توجد بيانات للتصدير'); return; }
+    downloadCSV(filename, csv);
+  });
+
+  /* ====== Period Report (consolidated) ====== */
+  document.getElementById('btnPeriod').addEventListener('click', async ()=>{
+    const from = document.getElementById('pFrom').value;
+    const to = document.getElementById('pTo').value;
+    if(!from || !to){ alert('اختر الفترة'); return; }
+    const data = await api('periodReport', { from: from, to: to });
+    if(!data || data.status === 'error'){ document.getElementById('periodReportArea').innerHTML = '<p class=\"muted\">لا توجد بيانات</p>'; return; }
+
+    let html = `<table><thead><tr>
+      <th>رمز الموظف</th><th>عدد أيام الحضور</th><th>إجمالي ساعات العمل</th><th>إجمالي أوفر تايم</th>
+    </tr></thead><tbody>`;
+    const rowsForCSV = [];
+    Object.keys(data).forEach(emp=>{
+      const row = data[emp];
+      html += `<tr>
+        <td>${emp}</td>
+        <td>${row.days_present}</td>
+        <td>${Number(row.total_work_hours).toFixed(2)}</td>
+        <td>${Number(row.total_overtime_hours).toFixed(2)}</td>
+      </tr>`;
+      rowsForCSV.push({
+        employee_id: emp,
+        days_present: row.days_present,
+        total_work_hours: Number(row.total_work_hours).toFixed(4),
+        total_overtime_hours: Number(row.total_overtime_hours).toFixed(4)
+      });
+    });
+    html += `</tbody></table>`;
+    document.getElementById('periodReportArea').innerHTML = html;
+    document.getElementById('exportPeriod').dataset.csv = objectArrayToCSV(rowsForCSV);
+    document.getElementById('exportPeriod').dataset.filename = `period_report_${from}_${to}.csv`;
+  });
+
+  document.getElementById('exportPeriod').addEventListener('click', ()=>{
+    const csv = document.getElementById('exportPeriod').dataset.csv;
+    const filename = document.getElementById('exportPeriod').dataset.filename || 'period_report.csv';
+    if(!csv){ alert('لا توجد بيانات للتصدير'); return; }
+    downloadCSV(filename, csv);
+  });
+
+  // Load employees on page load
+  window.addEventListener('load', ()=>{ loadEmployees(); });
+
 </script>
-
 </body>
 </html>
