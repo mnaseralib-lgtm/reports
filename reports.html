@@ -1,210 +1,119 @@
 <!DOCTYPE html>
 <html lang="ar" dir="rtl">
 <head>
-  <meta charset="UTF-8">
+  <meta charset="UTF-8" />
   <title>تقارير الحضور</title>
   <style>
-    body {
-      font-family: "Tahoma", sans-serif;
-      background-color: #f4f6f9;
-      margin: 0;
-      padding: 0;
-    }
-    header {
-      background-color: #007bff;
-      color: white;
-      padding: 15px;
-      text-align: center;
-      font-size: 20px;
-      font-weight: bold;
-    }
-    .container {
-      width: 90%;
-      margin: 20px auto;
-    }
-    .card {
-      background: #fff;
-      padding: 15px;
-      margin-bottom: 20px;
-      border-radius: 8px;
-      box-shadow: 0 0 10px rgba(0,0,0,0.1);
-    }
-    .row {
-      display: flex;
-      gap: 10px;
-      flex-wrap: wrap;
-      margin-bottom: 10px;
-    }
+    body { font-family: Tahoma, sans-serif; background-color: #f4f6f9; margin: 0; padding: 0; }
+    header { background-color: #007bff; color: white; padding: 15px; text-align: center; font-size: 20px; font-weight: bold; }
+    .container { width: 90%; margin: 20px auto; }
+    .card { background: white; padding: 15px; margin-bottom: 20px; border-radius: 8px; box-shadow: 0 0 10px rgba(0,0,0,0.1); }
+    .row { display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 10px; align-items: center; }
     label { font-weight: bold; }
-    input, select, button {
-      padding: 8px;
-      border-radius: 5px;
-      border: 1px solid #ccc;
-    }
-    button {
-      background: #007bff;
-      color: white;
-      cursor: pointer;
-    }
+    input, select, button { padding: 8px; border-radius: 5px; border: 1px solid #ccc; }
+    button { background: #007bff; color: white; cursor: pointer; }
     button:hover { background: #0056b3; }
-    table {
-      width: 100%;
-      border-collapse: collapse;
-      margin-top: 10px;
-    }
-    th, td {
-      border: 1px solid #ddd;
-      padding: 8px;
-      text-align: center;
-    }
-    th {
-      background-color: #007bff;
-      color: white;
-    }
-    .export-btn {
-      background-color: #28a745;
-      color: white;
-    }
+    .export-btn { background-color: #28a745 !important; }
+    table { width: 100%; border-collapse: collapse; margin-top: 10px; background: white; }
+    th, td { border: 1px solid #ddd; padding: 8px; text-align: center; }
+    th { background-color: #007bff; color: white; }
+    .message { color: #d9534f; font-weight: bold; margin-top: 10px; }
   </style>
 </head>
 <body>
+  <header>📊 تقارير الحضور والانصراف</header>
 
-<header>📊 تقارير الحضور والانصراف</header>
-<div class="container">
+  <div class="container">
 
-  <!-- تقرير موظف حسب فترة -->
-  <div class="card">
-    <h3>🔹 تقرير موظف لفترة محددة</h3>
-    <div class="row">
-      <label>الموظف:</label>
-      <select id="employeeSelect"></select>
-      <label>من:</label><input type="date" id="fromDate">
-      <label>إلى:</label><input type="date" id="toDate">
-      <button id="btnSingle">عرض</button>
-      <button class="export-btn" id="exportSingle">تصدير CSV</button>
+    <!-- 📌 تقرير موظف -->
+    <div class="card">
+      <h3>🔹 تقرير موظف لفترة محددة</h3>
+      <div class="row">
+        <label>كود الموظف:</label>
+        <input type="text" id="employeeCodeInput" placeholder="اكتب كود الموظف">
+        <label>من:</label><input type="date" id="fromDate">
+        <label>إلى:</label><input type="date" id="toDate">
+        <button id="btnSingle">عرض</button>
+        <button class="export-btn" id="exportSingle">تصدير CSV</button>
+      </div>
+      <div id="singleReportArea"></div>
     </div>
-    <div id="singleReportArea"></div>
-  </div>
 
-  <!-- تقرير يومي -->
-  <div class="card">
-    <h3>🔹 تقرير يومي لجميع الموظفين</h3>
-    <div class="row">
-      <label>التاريخ:</label><input type="date" id="dayDate">
-      <button id="btnDay">عرض</button>
-      <button class="export-btn" id="exportDay">تصدير CSV</button>
+    <!-- 📌 تقرير يومي -->
+    <div class="card">
+      <h3>🔹 تقرير يومي لجميع الموظفين</h3>
+      <div class="row">
+        <label>التاريخ:</label><input type="date" id="dayDate">
+        <button id="btnDay">عرض</button>
+        <button class="export-btn" id="exportDay">تصدير CSV</button>
+      </div>
+      <div id="dayReportArea"></div>
     </div>
-    <div id="dayReportArea"></div>
-  </div>
 
-  <!-- تقرير مجمع -->
-  <div class="card">
-    <h3>🔹 تقرير مجمع لفترة</h3>
-    <div class="row">
-      <label>من:</label><input type="date" id="pFrom">
-      <label>إلى:</label><input type="date" id="pTo">
-      <button id="btnPeriod">عرض</button>
-      <button class="export-btn" id="exportPeriod">تصدير CSV</button>
-    </div>
-    <div id="periodReportArea"></div>
   </div>
-
-</div>
 
 <script>
-  // ✅ ضع هنا رابط Web App الخاص بك
   const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwwXAovOaYSqPe4YLA4tawUOu0OHNYDehPmwNCRgPZ7CgcNdrvf5veiHlPwy1GVpFDe0g/exec";
 
-  async function api(action, params = {}) {
+  async function api(action, params={}) {
     const url = new URL(GOOGLE_SCRIPT_URL);
-    url.searchParams.set('action', action);
-    for (const key in params) url.searchParams.set(key, params[key]);
-
-    const res = await fetch(url);
-    return res.json();
+    url.searchParams.set("action", action);
+    Object.entries(params).forEach(([key, val]) => url.searchParams.set(key, val));
+    try {
+      const res = await fetch(url);
+      return res.json();
+    } catch {
+      alert("⚠ لم يتم الاتصال بالخادم. تأكد من نشر Web App بشكل صحيح");
+    }
   }
 
-  function toCSV(data) {
-    if (!data || !data.length) return "";
-    const headers = Object.keys(data[0]);
-    const rows = data.map(obj => headers.map(h => `"${obj[h] || ''}"`).join(","));
-    return [headers.join(","), ...rows].join("\n");
-  }
-
-  function downloadCSV(filename, data) {
-    const blob = new Blob([data], { type: "text/csv;charset=utf-8;" });
-    const link = document.createElement("a");
-    link.href = URL.createObjectURL(blob);
-    link.download = filename;
-    link.click();
-  }
-
-  function renderTable(containerId, rows) {
-    if (!rows.length) {
-      document.getElementById(containerId).innerHTML = "<p>لا توجد بيانات.</p>";
+  function renderRows(containerId, rows) {
+    if (!rows || rows.length === 0) {
+      document.getElementById(containerId).innerHTML = "<p class='message'>⚠ لا توجد بيانات مطابقة للبحث</p>";
       return;
     }
-    let html = "<table><tr>";
-    Object.keys(rows[0]).forEach(col => {
-      html += `<th>${col}</th>`;
+    let table = `<table>
+      <thead>
+        <tr>
+          <th>كود الموظف</th><th>الاسم</th><th>المهنة</th><th>الفئة</th>
+          <th>وقت الدخول</th><th>وقت الخروج</th>
+          <th>ساعات العمل</th><th>الساعات الإضافية</th>
+        </tr>
+      </thead><tbody>`;
+    rows.forEach(r => {
+      table += `<tr>
+        <td>${r.employee_id}</td>
+        <td>${r.name || "-"}</td>
+        <td>${r.occupation || "-"}</td>
+        <td>${r.manday_rate || "-"}</td>
+        <td>${r.first_in || "-"}</td>
+        <td>${r.last_out || "-"}</td>
+        <td>${r.work_hours_str || "00:00"}</td>
+        <td>${r.overtime_hours_str || "00:00"}</td>
+      </tr>`;
     });
-    html += "</tr>";
-
-    rows.forEach(row => {
-      html += "<tr>";
-      Object.keys(row).forEach(col => {
-        html += `<td>${row[col] || "-"}</td>`;
-      });
-      html += "</tr>";
-    });
-    html += "</table>";
-
-    document.getElementById(containerId).innerHTML = html;
+    table += "</tbody></table>";
+    document.getElementById(containerId).innerHTML = table;
   }
 
-  window.onload = async () => {
-    const employees = await api("listEmployees");
-    document.getElementById("employeeSelect").innerHTML =
-      `<option value="">اختر موظف</option>` +
-      employees.map(e => `<option value="${e}">${e}</option>`).join("");
-  };
-
   document.getElementById("btnSingle").onclick = async () => {
-    const emp = document.getElementById("employeeSelect").value;
+    const emp = document.getElementById("employeeCodeInput").value.trim();
     const from = document.getElementById("fromDate").value;
     const to = document.getElementById("toDate").value;
+    if (!emp || !from || !to) return alert("⚠ يرجى إدخال كود الموظف وتحديد الفترة");
+
     const data = await api("singleReport", { employee_id: emp, from, to });
-    const rows = data.days.map(d => ({
-      "كود الموظف": d.employee_id,
-      "الاسم": d.name,
-      "المهنة": d.occupation,
-      "الفئة": d.manday_rate,
-      "وقت الدخول": d.first_in,
-      "وقت الخروج": d.last_out,
-      "ساعات العمل": d.work_hours_str,
-      "الساعات الإضافية": d.overtime_hours_str
-    }));
-    renderTable("singleReportArea", rows);
-    document.getElementById("exportSingle").onclick = () =>
-      downloadCSV(`report_${emp}.csv`, toCSV(rows));
+    if (!data || data.status !== "ok") return renderRows("singleReportArea", []);
+    const rows = data.days.map(d => d);
+    renderRows("singleReportArea", rows);
   };
 
   document.getElementById("btnDay").onclick = async () => {
     const day = document.getElementById("dayDate").value;
-    const data = await api("dayReport", { day });
-    const rows = data.map(d => ({
-      "كود الموظف": d.employee_id,
-      "الاسم": d.name,
-      "المهنة": d.occupation,
-      "الفئة": d.manday_rate,
-      "وقت الدخول": d.first_in,
-      "وقت الخروج": d.last_out,
-      "ساعات العمل": d.work_hours_str,
-      "الساعات الإضافية": d.overtime_hours_str
-    }));
-    renderTable("dayReportArea", rows);
-    document.getElementById("exportDay").onclick = () =>
-      downloadCSV(`day_${day}.csv`, toCSV(rows));
+    if (!day) return alert("⚠ يرجى اختيار التاريخ");
+
+    const rows = await api("dayReport", { day });
+    renderRows("dayReportArea", rows);
   };
 </script>
 </body>
