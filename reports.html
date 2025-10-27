@@ -17,6 +17,7 @@
         .loading {color: blue; margin-top: 10px;}
         .container {max-width: 1200px; margin: 0 auto;}
         .form-section {background: #f9f9f9; padding: 15px; border-radius: 5px; margin-bottom: 20px;}
+        .debug {background: #fff3cd; padding: 10px; margin: 10px 0; border-radius: 5px; font-family: monospace; font-size: 12px;}
     </style>
 </head>
 <body>
@@ -66,6 +67,9 @@
         <div id="message" class="message"></div>
         <div id="loading" class="loading hidden">جاري تحميل البيانات...</div>
 
+        <!-- معلومات التصحيح -->
+        <div id="debugInfo" class="debug hidden"></div>
+
         <!-- جدول عرض النتائج -->
         <table id="resultsTable" class="hidden">
             <thead id="tableHead"></thead>
@@ -75,7 +79,7 @@
 
     <script>
         // ⚠️ ضع رابط النشر هنا
-        const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxsg5pXgLCDgQKumsTMHq6q83AtZAOqWty57g49rUylPVKghKsu2Pwuuxxf3mnQFtgHmQ/exec";
+        const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwHnqytZNw6SI_Hwqso4Y1OTW6p-PhxsQckvoLJJL_9giWzjaoVSaBNkjt4XtDRPaYZJQ/exec";
 
         function toggleReportForm() {
             const type = document.getElementById("reportType").value;
@@ -84,6 +88,7 @@
             document.getElementById("periodReportForm").classList.toggle("hidden", type !== "period");
             document.getElementById("message").innerHTML = "";
             document.getElementById("resultsTable").classList.add("hidden");
+            document.getElementById("debugInfo").classList.add("hidden");
         }
 
         function showLoading(show) {
@@ -94,6 +99,12 @@
             const messageEl = document.getElementById("message");
             messageEl.innerHTML = message;
             messageEl.style.color = isError ? 'red' : 'green';
+        }
+
+        function showDebugInfo(info) {
+            const debugEl = document.getElementById("debugInfo");
+            debugEl.innerHTML = `<strong>معلومات التصحيح:</strong><br>${info}`;
+            debugEl.classList.remove("hidden");
         }
 
         // ✅ جلب تقرير موظف
@@ -109,11 +120,16 @@
 
             showLoading(true);
             showMessage("");
+            document.getElementById("debugInfo").classList.add("hidden");
 
             try {
                 const url = `${SCRIPT_URL}?action=singleReport&employee_id=${emp}&from=${from}&to=${to}`;
+                console.log('Request URL:', url);
+                
                 const res = await fetch(url);
                 const data = await res.json();
+
+                console.log('Response data:', data);
 
                 if (data.error) {
                     showMessage("⚠ " + data.error);
@@ -124,10 +140,16 @@
                 if (!data.days || data.days.length === 0) {
                     showMessage("⚠ لا توجد بيانات مطابقة.");
                     document.getElementById("resultsTable").classList.add("hidden");
+                    // عرض معلومات التصحيح
+                    showDebugInfo(`تم البحث عن: الموظف ${emp} من ${from} إلى ${to}<br>عدد الأيام: 0`);
                     return;
                 }
 
-                showMessage("");
+                showMessage(`✅ تم العثور على ${data.days.length} يوم`, false);
+                
+                // إخفاء معلومات التصحيح في الإصدار النهائي
+                // showDebugInfo(JSON.stringify(data.days, null, 2));
+                
                 renderTable(
                     ["التاريخ", "الكود", "الاسم", "المهنة", "الدخول", "الخروج", "ساعات العمل", "الأوفر تايم"],
                     data.days.map(d => [
@@ -137,6 +159,7 @@
                 );
             } catch (error) {
                 showMessage("⚠ حدث خطأ في جلب البيانات: " + error.message);
+                console.error('Error:', error);
             } finally {
                 showLoading(false);
             }
@@ -152,11 +175,16 @@
 
             showLoading(true);
             showMessage("");
+            document.getElementById("debugInfo").classList.add("hidden");
 
             try {
                 const url = `${SCRIPT_URL}?action=dayReport&day=${day}`;
+                console.log('Request URL:', url);
+                
                 const res = await fetch(url);
                 const data = await res.json();
+
+                console.log('Response data:', data);
 
                 if (data.error) {
                     showMessage("⚠ " + data.error);
@@ -165,10 +193,11 @@
 
                 if (!data || data.length === 0) {
                     showMessage("⚠ لا توجد بيانات لهذا اليوم.");
+                    showDebugInfo(`تم البحث عن التاريخ: ${day}<br>عدد الموظفين: 0`);
                     return;
                 }
 
-                showMessage("");
+                showMessage(`✅ تم العثور على ${data.length} موظف`, false);
                 renderTable(
                     ["الكود", "الاسم", "المهنة", "الدخول", "الخروج", "ساعات العمل", "الأوفر تايم"],
                     data.map(d => [
@@ -178,6 +207,7 @@
                 );
             } catch (error) {
                 showMessage("⚠ حدث خطأ في جلب البيانات: " + error.message);
+                console.error('Error:', error);
             } finally {
                 showLoading(false);
             }
@@ -194,11 +224,16 @@
 
             showLoading(true);
             showMessage("");
+            document.getElementById("debugInfo").classList.add("hidden");
 
             try {
                 const url = `${SCRIPT_URL}?action=periodReport&from=${from}&to=${to}`;
+                console.log('Request URL:', url);
+                
                 const res = await fetch(url);
                 const data = await res.json();
+
+                console.log('Response data:', data);
 
                 if (data.error) {
                     showMessage("⚠ " + data.error);
@@ -207,22 +242,31 @@
 
                 if (!data || Object.keys(data).length === 0) {
                     showMessage("⚠ لا توجد بيانات فى هذه الفترة.");
+                    showDebugInfo(`تم البحث من ${from} إلى ${to}<br>عدد الموظفين: 0`);
                     return;
                 }
 
-                showMessage("");
                 // تحويل الكائن إلى مصفوفة
-                const employeesArray = Object.keys(data).map(empId => data[empId]);
+                const employeesArray = Object.keys(data).map(empId => {
+                    const empData = data[empId];
+                    return {
+                        ...empData,
+                        employee_id: empId
+                    };
+                });
+
+                showMessage(`✅ تم العثور على ${employeesArray.length} موظف`, false);
                 
                 renderTable(
                     ["الكود", "الاسم", "المهنة", "عدد الأيام", "إجمالي العمل", "إجمالي الأوفر"],
                     employeesArray.map(d => [
-                        d.employee_id || empId, d.name, d.occupation,
+                        d.employee_id, d.name, d.occupation,
                         d.days_present || 0, d.total_work_hours_str || "0:00", d.total_overtime_hours_str || "0:00"
                     ])
                 );
             } catch (error) {
                 showMessage("⚠ حدث خطأ في جلب البيانات: " + error.message);
+                console.error('Error:', error);
             } finally {
                 showLoading(false);
             }
