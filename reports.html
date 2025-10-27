@@ -21,6 +21,12 @@
         .employee-info {background: #e7f3ff; padding: 10px; border-radius: 5px; margin: 10px 0;}
         .report-actions {margin: 10px 0;}
         .report-actions button {margin: 0 5px;}
+        .summary-section {background: #f0f8ff; padding: 15px; border-radius: 5px; margin: 15px 0; border-right: 4px solid #4CAF50;}
+        .summary-grid {display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px; margin-top: 10px;}
+        .summary-item {background: white; padding: 10px; border-radius: 5px; text-align: center; box-shadow: 0 2px 4px rgba(0,0,0,0.1);}
+        .summary-value {font-size: 18px; font-weight: bold; color: #2196F3;}
+        .overtime {color: #FF5722;}
+        .movements-list {font-size: 12px; color: #666; margin-top: 5px;}
     </style>
 </head>
 <body>
@@ -72,6 +78,12 @@
         <div id="message" class="message"></div>
         <div id="loading" class="loading hidden">⏳ جاري تحميل البيانات...</div>
 
+        <!-- قسم الملخص -->
+        <div id="summarySection" class="summary-section hidden">
+            <h3>📈 ملخص التقرير</h3>
+            <div id="summaryContent" class="summary-grid"></div>
+        </div>
+
         <!-- أزرار إضافية للتحكم في التقرير -->
         <div id="reportActions" class="report-actions hidden">
             <button onclick="exportToExcel()" style="background: #06b6d4; color: white;">📥 تصدير إلى Excel</button>
@@ -89,8 +101,7 @@
     </div>
 
     <script>
-        // ⚠️ ضع رابط النشر هنا
-        const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzfqoW5rM3wcJmC84sfI2l_JlF2guWHirOnAvy33dhXbFIgFzkh94TIZ6huATejBxkVIg/exec";
+        const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzEkORvlpv9K_vNwdSrn30iFwEqd0DfYehgCJ_gYPaA0L-4nFEsW4Ez5FT6w1mUwLVq4Q/exec";
 
         function toggleReportForm() {
             const type = document.getElementById("reportType").value;
@@ -100,6 +111,7 @@
             document.getElementById("message").innerHTML = "";
             document.getElementById("resultsSection").classList.add("hidden");
             document.getElementById("reportActions").classList.add("hidden");
+            document.getElementById("summarySection").classList.add("hidden");
             document.getElementById("employeeInfo").classList.add("hidden");
         }
 
@@ -136,6 +148,7 @@
             showLoading(true);
             showMessage("");
             document.getElementById("employeeInfo").classList.add("hidden");
+            document.getElementById("summarySection").classList.add("hidden");
 
             try {
                 const url = `${SCRIPT_URL}?action=singleReport&employee_id=${emp}&from=${from}&to=${to}`;
@@ -159,18 +172,10 @@
                 showMessage(`✅ تم العثور على ${data.days.length} يوم`, false);
                 showEmployeeInfo(data.days[0]);
                 
-                renderTable(
-                    ["التاريخ", "اليوم", "الدخول", "الانصراف", "ساعات العمل", "الأوفر تايم", "عدد التسجيلات"],
-                    data.days.map(d => [
-                        d.date,
-                        getArabicDayName(d.date),
-                        d.first_in,
-                        d.last_out,
-                        d.work_hours_str,
-                        d.overtime_hours_str,
-                        d.entries_count || "0"
-                    ])
-                );
+                // عرض الملخص
+                showSummary(data.summary, 'employee');
+                
+                renderEmployeeTable(data.days);
                 
                 document.getElementById("reportActions").classList.remove("hidden");
             } catch (error) {
@@ -190,6 +195,7 @@
 
             showLoading(true);
             showMessage("");
+            document.getElementById("summarySection").classList.add("hidden");
 
             try {
                 const url = `${SCRIPT_URL}?action=dayReport&day=${day}`;
@@ -201,25 +207,17 @@
                     return;
                 }
 
-                if (!data || data.length === 0) {
+                if (!data.employees || data.employees.length === 0) {
                     showMessage("⚠ لا توجد بيانات لهذا اليوم.");
                     return;
                 }
 
-                showMessage(`✅ تم العثور على ${data.length} موظف`, false);
-                renderTable(
-                    ["كود الموظف", "الاسم", "المهنة", "الدخول", "الانصراف", "ساعات العمل", "الأوفر تايم", "عدد التسجيلات"],
-                    data.map(d => [
-                        d.employee_id,
-                        d.name,
-                        d.occupation,
-                        d.first_in,
-                        d.last_out,
-                        d.work_hours_str,
-                        d.overtime_hours_str,
-                        d.entries_count || "0"
-                    ])
-                );
+                showMessage(`✅ تم العثور على ${data.employees.length} موظف`, false);
+                
+                // عرض ملخص اليوم
+                showSummary(data.summary, 'day');
+                
+                renderDayTable(data.employees);
                 
                 document.getElementById("reportActions").classList.remove("hidden");
             } catch (error) {
@@ -240,6 +238,7 @@
 
             showLoading(true);
             showMessage("");
+            document.getElementById("summarySection").classList.add("hidden");
 
             try {
                 const url = `${SCRIPT_URL}?action=periodReport&from=${from}&to=${to}`;
@@ -265,23 +264,18 @@
                         occupation: empData.occupation,
                         days_present: empData.days_present || 0,
                         total_work_hours_str: empData.total_work_hours_str || "0:00",
-                        total_overtime_hours_str: empData.total_overtime_hours_str || "0:00"
+                        total_overtime_hours_str: empData.total_overtime_hours_str || "0:00",
+                        average_daily_hours: empData.average_daily_hours || "0:00"
                     };
                 });
 
                 showMessage(`✅ تم العثور على ${employeesArray.length} موظف`, false);
                 
-                renderTable(
-                    ["كود الموظف", "الاسم", "المهنة", "أيام الحضور", "إجمالي ساعات العمل", "إجمالي الأوفر تايم"],
-                    employeesArray.map(d => [
-                        d.employee_id,
-                        d.name,
-                        d.occupation,
-                        d.days_present,
-                        d.total_work_hours_str,
-                        d.total_overtime_hours_str
-                    ])
-                );
+                // حساب الإجماليات
+                const summary = calculatePeriodSummary(employeesArray);
+                showSummary(summary, 'period');
+                
+                renderPeriodTable(employeesArray);
                 
                 document.getElementById("reportActions").classList.remove("hidden");
             } catch (error) {
@@ -291,14 +285,215 @@
             }
         }
 
-        // ✅ دالة عرض الجدول
-        function renderTable(headers, rows) {
+        // ✅ عرض الملخص
+        function showSummary(summary, type) {
+            const summarySection = document.getElementById("summarySection");
+            const summaryContent = document.getElementById("summaryContent");
+            
+            let html = '';
+            
+            if (type === 'employee') {
+                html = `
+                    <div class="summary-item">
+                        <div>إجمالي الأيام</div>
+                        <div class="summary-value">${summary.total_days} يوم</div>
+                    </div>
+                    <div class="summary-item">
+                        <div>إجمالي ساعات العمل</div>
+                        <div class="summary-value">${summary.total_work_hours}</div>
+                    </div>
+                    <div class="summary-item">
+                        <div>إجمالي الوقت الإضافي</div>
+                        <div class="summary-value overtime">${summary.total_overtime}</div>
+                    </div>
+                    <div class="summary-item">
+                        <div>متوسط ساعات العمل اليومي</div>
+                        <div class="summary-value">${summary.average_work_hours}</div>
+                    </div>
+                `;
+            } else if (type === 'day') {
+                html = `
+                    <div class="summary-item">
+                        <div>عدد الموظفين</div>
+                        <div class="summary-value">${summary.total_employees} موظف</div>
+                    </div>
+                    <div class="summary-item">
+                        <div>إجمالي ساعات العمل</div>
+                        <div class="summary-value">${summary.total_work_hours}</div>
+                    </div>
+                    <div class="summary-item">
+                        <div>إجمالي الوقت الإضافي</div>
+                        <div class="summary-value overtime">${summary.total_overtime}</div>
+                    </div>
+                    <div class="summary-item">
+                        <div>متوسط ساعات العمل</div>
+                        <div class="summary-value">${summary.average_work_hours}</div>
+                    </div>
+                `;
+            } else if (type === 'period') {
+                html = `
+                    <div class="summary-item">
+                        <div>عدد الموظفين</div>
+                        <div class="summary-value">${summary.total_employees} موظف</div>
+                    </div>
+                    <div class="summary-item">
+                        <div>إجمالي أيام العمل</div>
+                        <div class="summary-value">${summary.total_days} يوم</div>
+                    </div>
+                    <div class="summary-item">
+                        <div>إجمالي ساعات العمل</div>
+                        <div class="summary-value">${summary.total_work_hours}</div>
+                    </div>
+                    <div class="summary-item">
+                        <div>إجمالي الوقت الإضافي</div>
+                        <div class="summary-value overtime">${summary.total_overtime}</div>
+                    </div>
+                `;
+            }
+            
+            summaryContent.innerHTML = html;
+            summarySection.classList.remove("hidden");
+        }
+
+        // ✅ حساب ملخص الفترة
+        function calculatePeriodSummary(employees) {
+            let totalEmployees = employees.length;
+            let totalDays = 0;
+            let totalWorkMinutes = 0;
+            let totalOvertimeMinutes = 0;
+            
+            employees.forEach(emp => {
+                totalDays += emp.days_present;
+                // تحويل ساعات العمل إلى دقائق
+                const workTime = emp.total_work_hours_str.split(':');
+                totalWorkMinutes += parseInt(workTime[0]) * 60 + parseInt(workTime[1]);
+                
+                // تحويل الوقت الإضافي إلى دقائق
+                const overtime = emp.total_overtime_hours_str.split(':');
+                totalOvertimeMinutes += parseInt(overtime[0]) * 60 + parseInt(overtime[1]);
+            });
+            
+            return {
+                total_employees: totalEmployees,
+                total_days: totalDays,
+                total_work_hours: minutesToTimeStr(totalWorkMinutes),
+                total_overtime: minutesToTimeStr(totalOvertimeMinutes)
+            };
+        }
+
+        // ✅ تحويل الدقائق إلى تنسيق الوقت
+        function minutesToTimeStr(minutes) {
+            if (minutes <= 0) return "0:00";
+            const h = Math.floor(minutes / 60);
+            const m = minutes % 60;
+            return `${h}:${m.toString().padStart(2, "0")}`;
+        }
+
+        // ✅ دالة عرض جدول الموظف
+        function renderEmployeeTable(days) {
             const thead = document.getElementById("tableHead");
             const tbody = document.getElementById("tableBody");
             const resultsSection = document.getElementById("resultsSection");
 
-            thead.innerHTML = `<tr>${headers.map(h => `<th>${h}</th>`).join("")}</tr>`;
-            tbody.innerHTML = rows.map(r => `<tr>${r.map(c => `<td>${c}</td>`).join("")}</tr>`).join("");
+            thead.innerHTML = `
+                <tr>
+                    <th>التاريخ</th>
+                    <th>اليوم</th>
+                    <th>الدخول</th>
+                    <th>الانصراف</th>
+                    <th>ساعات العمل</th>
+                    <th>الوقت الإضافي</th>
+                    <th>عدد التسجيلات</th>
+                    <th>الحركات</th>
+                </tr>
+            `;
+            
+            tbody.innerHTML = days.map(day => `
+                <tr>
+                    <td>${day.date}</td>
+                    <td>${getArabicDayName(day.date)}</td>
+                    <td>${day.first_in}</td>
+                    <td>${day.last_out}</td>
+                    <td><strong>${day.work_hours_str}</strong></td>
+                    <td><strong class="overtime">${day.overtime_hours_str}</strong></td>
+                    <td>${day.entries_count}</td>
+                    <td class="movements-list">
+                        ${day.movements ? day.movements.map(m => `${m.type} ${m.time}`).join('<br>') : ''}
+                    </td>
+                </tr>
+            `).join("");
+
+            resultsSection.classList.remove("hidden");
+        }
+
+        // ✅ دالة عرض جدول اليوم
+        function renderDayTable(employees) {
+            const thead = document.getElementById("tableHead");
+            const tbody = document.getElementById("tableBody");
+            const resultsSection = document.getElementById("resultsSection");
+
+            thead.innerHTML = `
+                <tr>
+                    <th>كود الموظف</th>
+                    <th>الاسم</th>
+                    <th>المهنة</th>
+                    <th>الدخول</th>
+                    <th>الانصراف</th>
+                    <th>ساعات العمل</th>
+                    <th>الوقت الإضافي</th>
+                    <th>عدد التسجيلات</th>
+                    <th>الحركات</th>
+                </tr>
+            `;
+            
+            tbody.innerHTML = employees.map(emp => `
+                <tr>
+                    <td>${emp.employee_id}</td>
+                    <td>${emp.name}</td>
+                    <td>${emp.occupation}</td>
+                    <td>${emp.first_in}</td>
+                    <td>${emp.last_out}</td>
+                    <td><strong>${emp.work_hours_str}</strong></td>
+                    <td><strong class="overtime">${emp.overtime_hours_str}</strong></td>
+                    <td>${emp.entries_count}</td>
+                    <td class="movements-list">
+                        ${emp.movements ? emp.movements.map(m => `${m.type} ${m.time}`).join('<br>') : ''}
+                    </td>
+                </tr>
+            `).join("");
+
+            resultsSection.classList.remove("hidden");
+        }
+
+        // ✅ دالة عرض جدول الفترة
+        function renderPeriodTable(employees) {
+            const thead = document.getElementById("tableHead");
+            const tbody = document.getElementById("tableBody");
+            const resultsSection = document.getElementById("resultsSection");
+
+            thead.innerHTML = `
+                <tr>
+                    <th>كود الموظف</th>
+                    <th>الاسم</th>
+                    <th>المهنة</th>
+                    <th>أيام الحضور</th>
+                    <th>إجمالي ساعات العمل</th>
+                    <th>إجمالي الوقت الإضافي</th>
+                    <th>متوسط الساعات اليومي</th>
+                </tr>
+            `;
+            
+            tbody.innerHTML = employees.map(emp => `
+                <tr>
+                    <td>${emp.employee_id}</td>
+                    <td>${emp.name}</td>
+                    <td>${emp.occupation}</td>
+                    <td>${emp.days_present}</td>
+                    <td><strong>${emp.total_work_hours_str}</strong></td>
+                    <td><strong class="overtime">${emp.total_overtime_hours_str}</strong></td>
+                    <td>${emp.average_daily_hours}</td>
+                </tr>
+            `).join("");
 
             resultsSection.classList.remove("hidden");
         }
@@ -349,11 +544,13 @@
         // ✅ دالة الطباعة
         function printReport() {
             const printContent = document.getElementById("resultsSection").innerHTML;
+            const summaryContent = document.getElementById("summarySection").innerHTML;
             const originalContent = document.body.innerHTML;
             
             document.body.innerHTML = `
                 <div style="direction: rtl; text-align: right; font-family: Arial, sans-serif;">
                     <h2 style="text-align: center;">تقرير الحضور والانصراف</h2>
+                    ${summaryContent}
                     ${printContent}
                 </div>
             `;
