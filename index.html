@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>نظام الحضور</title>
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#10b981"/>
+<style>
+  body{font-family:Arial, sans-serif;background:#f3f4f6;color:#111;padding:0;margin:0;direction:rtl}
+  .app{display:flex;min-height:100vh}
+  .sidebar{width:72px;background:#06212a;color:#fff;display:flex;flex-direction:column;align-items:center;padding:12px;gap:12px}
+  .sidebar a{color:#fff;text-decoration:none;font-size:12px;text-align:center}
+  .main{flex:1;padding:18px}
+  .card{max-width:720px;margin:18px auto;background:#fff;padding:18px;border-radius:12px;box-shadow:0 6px 24px rgba(0,0,0,0.08)}
+  h1{font-size:20px;margin:0 0 10px}
+  .controls{display:flex;gap:12px;align-items:center;flex-wrap:wrap;justify-content:center;margin-bottom:12px}
+  select,input[type=text]{padding:10px;border-radius:8px;border:1px solid #e5e7eb;font-size:15px}
+  button{padding:10px 14px;border-radius:8px;border:none;background:#3b82f6;color:#fff;font-weight:600;cursor:pointer}
+  #exportBtn{background:#06b6d4}
+  #reader{width:100%;max-width:480px;margin:8px auto;border-radius:10px;overflow:hidden;background:#000}
+  .confirmation-message{position:fixed;top:18px;left:50%;transform:translateX(-50%);background:rgba(16,185,129,0.97);color:#fff;padding:10px 18px;border-radius:10px;z-index:9999;display:none;font-weight:700}
+  .counter{font-weight:700;color:#065f46}
+  .manual-row{display:flex;gap:8px;justify-content:center;align-items:center;margin-top:10px;flex-wrap:wrap}
+  .small{font-size:13px;color:#6b7280}
+  .link-icon{writing-mode:vertical-rl;transform:rotate(180deg);font-weight:700}
+  @media (max-width:720px){ .sidebar{display:flex;width:56px} }
+</style>
+</head>
+<body>
+<div class="app">
+  <nav class="sidebar" role="navigation" aria-label="القائمة الجانبية">
+    <a href="index.html" title="الرئيسية">🏠<div style="font-size:11px;margin-top:6px">الرئيسية</div></a>
+    <a href="reports.html" title="التقارير">📊<div style="font-size:11px;margin-top:6px">التقارير</div></a>
+    <a href="#" id="offlineStatus" title="حالة الاتصال">⚡<div style="font-size:11px;margin-top:6px">متصل</div></a>
+  </nav>
+
+  <main class="main">
+    <div class="card">
+    <center><h1>Abo Qir Metro JV Orascom & Colas rails</h1></center>
+      <div class="controls" role="region" aria-label="إعدادات">
+        <label for="movementSelect" class="small">نوع الحركة:</label>
+        <select id="movementSelect" aria-label="اختيار نوع الحركة">
+          <option value="">اختر نوع الحركة</option>
+          <option value="دخول">دخول</option>
+          <option value="انصراف">انصراف</option>
+          <option value="انصراف مسائي">انصراف مسائي</option>
+        </select>
+
+        <div class="counter" id="scanCount">عدد الحالات المسجلة: 0</div>
+
+        <button id="stopBtn" style="background:#ef4444">إيقاف الماسح</button>
+        <button id="startBtn" style="background:#10b981">تشغيل الماسح</button>
+      </div>
+
+      <div id="reader" aria-live="polite"></div>
+
+      <div class="manual-row">
+        <input type="text" id="manualInput" placeholder="إدخال يدوي - رقم أو اسم" aria-label="إدخال يدوي">
+        <button id="manualAddBtn">إضافة يدوي</button>
+      </div>
+
+      <div style="text-align:center;margin-top:14px">
+        <button id="exportBtn">تصدير إلى Excel (CSV)</button>
+      </div>
+
+      <p class="small" style="margin-top:12px;text-align:center"> HR Department <code></code></p>
+    </div>
+
+    <div id="confirmMsg" class="confirmation-message" role="status" aria-live="polite"></div>
+  </main>
+</div>
+
+<script src="https://unpkg.com/html5-qrcode"></script>
+<script>
+// ---------------- CONFIG ----------------
+// ضع هنا رابط Web App الخاص بك (Apps Script) — عدّله إلى رابطك قبل النشر
+const GOOGLE_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzGJy8WInLBIJGuqa90bDMWuK9SIHOJ4IH5No8EcvdPWJQsmUKfQqrPNe5aFB7pCwE-sA/exec';
+
+// ---------------- State ----------------
+let records = [];
+let scanCount = 0;
+let currentScanner = null;
+let lastScannedId = null;
+let lastScannedAt = 0;
+const DEBOUNCE_MS = 1500; // منع التكرار السريع
+
+// Beep sound
+const beepBase64 = "UklGRuQAAABXQVZFZm10IBAAAAABAAEAgD4AAAB9AAACABAAZGF0YcQAAACAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICA=";
+const beepSound = new Audio("data:audio/wav;base64," + beepBase64);
+beepSound.volume = 1.0;
+function playBeep(){ try{ beepSound.currentTime = 0; beepSound.play(); }catch(e){ console.warn('beep failed', e); } try{ if(navigator.vibrate) navigator.vibrate(180); } catch(e){} }
+
+function showConfirmation(record){ const msg = document.getElementById('confirmMsg'); msg.textContent = `✅ تم تسجيل ${record.movement} لـ ${record.name}`; msg.style.display = 'block'; setTimeout(()=>{ msg.style.display = 'none'; }, 2000); }
+
+function updateCounter(){ document.getElementById('scanCount').innerText = 'عدد الحالات المسجلة: ' + scanCount; }
+
+function createLocalRecord(employeeId, movement){ const now = new Date(); return { id: `local-${Date.now()}-${Math.random().toString(36).slice(2,8)}`, name: String(employeeId).trim(), movement: movement, timestamp: now.toISOString(), date: now.toLocaleDateString('ar-EG'), time: now.toLocaleTimeString('ar-EG'), source: 'QR' }; }
+
+// Scanner functions (مثل الأصلية)
+function startScanner(){ if(currentScanner) return; const readerId = "reader"; const html5Qr = new Html5Qrcode(readerId); currentScanner = html5Qr; const config = { fps: 10, qrbox: { width: 250, height: 250 } };
+  Html5Qrcode.getCameras().then(devices => {
+    if(devices && devices.length){
+      const rear = devices.find(d => (d.label||'').toLowerCase().includes('back') || (d.label||'').toLowerCase().includes('rear')) || devices[0];
+      html5Qr.start(rear.id || { facingMode: "environment" }, config, qrCodeMessage => {
+        const now = Date.now();
+        if(qrCodeMessage === lastScannedId && (now - lastScannedAt) < DEBOUNCE_MS) return;
+        lastScannedId = qrCodeMessage; lastScannedAt = now;
+        html5Qr.stop().then(()=>{ currentScanner = null; handleScanned(qrCodeMessage); setTimeout(()=> startScanner(), 600); }).catch(err=>{ currentScanner = null; handleScanned(qrCodeMessage); setTimeout(()=> startScanner(), 600); });
+      }, errorMessage => {}).catch(err=>{ console.error('start failed', err); const msg = document.getElementById('confirmMsg'); msg.textContent = 'خطأ: لا يمكن الوصول إلى الكاميرا. تأكد من الأذونات.'; msg.style.display = 'block'; setTimeout(()=> msg.style.display='none',3000); });
+    } else { const msg = document.getElementById('confirmMsg'); msg.textContent = 'خطأ: لم يتم العثور على كاميرا.'; msg.style.display = 'block'; setTimeout(()=> msg.style.display='none',3000); }
+  }).catch(err=>{ console.error('cameras error', err); }); }
+
+function stopScanner(){ if(!currentScanner) return; currentScanner.stop().then(()=>{ try{ currentScanner.clear(); }catch(e){}; currentScanner = null; const msg = document.getElementById('confirmMsg'); msg.textContent = 'تم إيقاف الماسح.'; msg.style.display = 'block'; setTimeout(()=> msg.style.display='none',1500); }).catch(err=>{ console.warn('stop err', err); currentScanner = null; }); }
+
+function handleScanned(qr){ const movement = document.getElementById('movementSelect').value; if(!movement){ const msg = document.getElementById('confirmMsg'); msg.textContent = 'الرجاء اختيار نوع الحركة أولاً.'; msg.style.display = 'block'; setTimeout(()=> msg.style.display='none',1800); return; }
+  const record = createLocalRecord(qr, movement); records.unshift(record); scanCount++; updateCounter(); saveLocally(); sendToGoogle(record); playBeep(); showConfirmation(record); }
+
+function manualAdd(){ const val = document.getElementById('manualInput').value; const movement = document.getElementById('movementSelect').value; if(!movement){ alert('اختر نوع الحركة أولاً'); return; } if(!val || String(val).trim()===''){ alert('أدخل رقم أو اسم صالح'); return; } const record = createLocalRecord(val, movement); records.unshift(record); scanCount++; updateCounter(); saveLocally(); sendToGoogle(record); playBeep(); showConfirmation(record); document.getElementById('manualInput').value=''; }
+
+function saveLocally(){ try{ localStorage.setItem('attendance_records_v3', JSON.stringify(records)); }catch(e){} }
+function loadLocally(){ try{ const s = localStorage.getItem('attendance_records_v3'); if(s){ records = JSON.parse(s); scanCount = records.length; updateCounter(); } }catch(e){} }
+
+function exportToExcel(){ const data = records.slice().sort((a,b)=> new Date(b.timestamp) - new Date(a.timestamp)); const headers = ['معرف السجل','رمز الموظف','نوع الحركة','الوقت','المصدر']; let csv = headers.join(',') + '\n'; const esc = v => { if(v==null) return ''; let s = String(v); if(s.includes(',')||s.includes('\n')||s.includes('"')) return '"' + s.replace(/"/g,'""') + '"'; return s; };
+  data.forEach(r=>{ csv += [esc(r.id), esc(r.name), esc(r.movement), esc(new Date(r.timestamp).toLocaleString('en-US',{hour12:false})), esc(r.source)].join(',') + '\n'; });
+  const blob = new Blob(["\uFEFF" + csv], { type: 'text/csv;charset=utf-8;' }); const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = `Attendance_Records_${new Date().toISOString().slice(0,10)}.csv`; document.body.appendChild(a); a.click(); a.remove(); }
+
+function sendToGoogle(record){ try{ const params = new URLSearchParams(); params.append('records_batch', JSON.stringify([{ id: record.id, employee_id: record.name, movement_type: record.movement, timestamp: record.timestamp, source: record.source }])); // use no-cors for beacon fallback
+    fetch(GOOGLE_SCRIPT_URL, { method: 'POST', mode: 'no-cors', headers: { 'Content-Type': 'application/x-www-form-urlencoded' }, body: params.toString() })
+    .catch(e=>{ try{ if(navigator.sendBeacon){ const blob = new Blob([params.toString()], { type: 'application/x-www-form-urlencoded' }); navigator.sendBeacon(GOOGLE_SCRIPT_URL, blob); } }catch(_){} }); }catch(e){ console.warn(e); } }
+
+// Init & Controls
+document.getElementById('startBtn').addEventListener('click', startScanner);
+document.getElementById('stopBtn').addEventListener('click', stopScanner);
+document.getElementById('manualAddBtn').addEventListener('click', manualAdd);
+document.getElementById('exportBtn').addEventListener('click', exportToExcel);
+
+loadLocally();
+
+// Service Worker registration for PWA (if hosted)
+if('serviceWorker' in navigator){ window.addEventListener('load', ()=>{ navigator.serviceWorker.register('service-worker.js').then(()=>console.log('SW registered')).catch(()=>{}); }); }
+
+// Update offline status in sidebar
+function updateOnlineStatus(){ const el = document.getElementById('offlineStatus'); el.innerHTML = navigator.onLine ? '⚡<div style="font-size:11px;margin-top:6px">متصل</div>' : '⛔<div style="font-size:11px;margin-top:6px">غير متصل</div>'; }
+window.addEventListener('online', updateOnlineStatus); window.addEventListener('offline', updateOnlineStatus); updateOnlineStatus();
+</script>
+</body>
+</html>
