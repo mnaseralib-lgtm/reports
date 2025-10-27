@@ -19,6 +19,8 @@
         .form-section {background: #f9f9f9; padding: 15px; border-radius: 5px; margin-bottom: 20px;}
         .success {color: green;}
         .employee-info {background: #e7f3ff; padding: 10px; border-radius: 5px; margin: 10px 0;}
+        .report-actions {margin: 10px 0;}
+        .report-actions button {margin: 0 5px;}
     </style>
 </head>
 <body>
@@ -70,6 +72,12 @@
         <div id="message" class="message"></div>
         <div id="loading" class="loading hidden">⏳ جاري تحميل البيانات...</div>
 
+        <!-- أزرار إضافية للتحكم في التقرير -->
+        <div id="reportActions" class="report-actions hidden">
+            <button onclick="exportToExcel()" style="background: #06b6d4; color: white;">📥 تصدير إلى Excel</button>
+            <button onclick="printReport()" style="background: #8b5cf6; color: white;">🖨️ طباعة التقرير</button>
+        </div>
+
         <!-- جدول عرض النتائج -->
         <div id="resultsSection" class="hidden">
             <h3>📋 نتائج التقرير</h3>
@@ -82,7 +90,7 @@
 
     <script>
         // ⚠️ ضع رابط النشر هنا
-        const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbypVU6KlNGpSevWO1GYgGi16SDMKue3GVK2dmNWcVg6581ifsIsjU5F1P5aD595CN_bxg/exec";
+        const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzfqoW5rM3wcJmC84sfI2l_JlF2guWHirOnAvy33dhXbFIgFzkh94TIZ6huATejBxkVIg/exec";
 
         function toggleReportForm() {
             const type = document.getElementById("reportType").value;
@@ -91,6 +99,7 @@
             document.getElementById("periodReportForm").classList.toggle("hidden", type !== "period");
             document.getElementById("message").innerHTML = "";
             document.getElementById("resultsSection").classList.add("hidden");
+            document.getElementById("reportActions").classList.add("hidden");
             document.getElementById("employeeInfo").classList.add("hidden");
         }
 
@@ -136,12 +145,14 @@
                 if (data.error) {
                     showMessage("⚠ " + data.error);
                     document.getElementById("resultsSection").classList.add("hidden");
+                    document.getElementById("reportActions").classList.add("hidden");
                     return;
                 }
 
                 if (!data.days || data.days.length === 0) {
                     showMessage("⚠ لا توجد بيانات مطابقة للفترة المحددة.");
                     document.getElementById("resultsSection").classList.add("hidden");
+                    document.getElementById("reportActions").classList.add("hidden");
                     return;
                 }
 
@@ -149,9 +160,10 @@
                 showEmployeeInfo(data.days[0]);
                 
                 renderTable(
-                    ["التاريخ", "الدخول", "الانصراف", "ساعات العمل", "الأوفر تايم", "عدد التسجيلات"],
+                    ["التاريخ", "اليوم", "الدخول", "الانصراف", "ساعات العمل", "الأوفر تايم", "عدد التسجيلات"],
                     data.days.map(d => [
                         d.date,
+                        getArabicDayName(d.date),
                         d.first_in,
                         d.last_out,
                         d.work_hours_str,
@@ -159,6 +171,8 @@
                         d.entries_count || "0"
                     ])
                 );
+                
+                document.getElementById("reportActions").classList.remove("hidden");
             } catch (error) {
                 showMessage("⚠ حدث خطأ في جلب البيانات: " + error.message);
             } finally {
@@ -206,6 +220,8 @@
                         d.entries_count || "0"
                     ])
                 );
+                
+                document.getElementById("reportActions").classList.remove("hidden");
             } catch (error) {
                 showMessage("⚠ حدث خطأ في جلب البيانات: " + error.message);
             } finally {
@@ -266,6 +282,8 @@
                         d.total_overtime_hours_str
                     ])
                 );
+                
+                document.getElementById("reportActions").classList.remove("hidden");
             } catch (error) {
                 showMessage("⚠ حدث خطأ في جلب البيانات: " + error.message);
             } finally {
@@ -283,6 +301,66 @@
             tbody.innerHTML = rows.map(r => `<tr>${r.map(c => `<td>${c}</td>`).join("")}</tr>`).join("");
 
             resultsSection.classList.remove("hidden");
+        }
+
+        // ✅ دالة لتحويل التاريخ إلى اسم اليوم بالعربية
+        function getArabicDayName(dateString) {
+            const days = ['الأحد', 'الإثنين', 'الثلاثاء', 'الأربعاء', 'الخميس', 'الجمعة', 'السبت'];
+            const date = new Date(dateString);
+            return days[date.getDay()];
+        }
+
+        // ✅ دالة تصدير إلى Excel
+        function exportToExcel() {
+            const table = document.getElementById("resultsTable");
+            let csv = [];
+            
+            // استخراج العناوين
+            const headers = [];
+            for (let i = 0; i < table.rows[0].cells.length; i++) {
+                headers.push(table.rows[0].cells[i].textContent);
+            }
+            csv.push(headers.join(","));
+            
+            // استخراج البيانات
+            for (let i = 1; i < table.rows.length; i++) {
+                const row = [];
+                for (let j = 0; j < table.rows[i].cells.length; j++) {
+                    row.push(table.rows[i].cells[j].textContent);
+                }
+                csv.push(row.join(","));
+            }
+            
+            // إنشاء ملف CSV
+            const csvContent = "\uFEFF" + csv.join("\n");
+            const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+            const link = document.createElement("a");
+            const url = URL.createObjectURL(blob);
+            
+            link.setAttribute("href", url);
+            link.setAttribute("download", `تقرير_الحضور_${new Date().toISOString().slice(0,10)}.csv`);
+            link.style.visibility = "hidden";
+            
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        }
+
+        // ✅ دالة الطباعة
+        function printReport() {
+            const printContent = document.getElementById("resultsSection").innerHTML;
+            const originalContent = document.body.innerHTML;
+            
+            document.body.innerHTML = `
+                <div style="direction: rtl; text-align: right; font-family: Arial, sans-serif;">
+                    <h2 style="text-align: center;">تقرير الحضور والانصراف</h2>
+                    ${printContent}
+                </div>
+            `;
+            
+            window.print();
+            document.body.innerHTML = originalContent;
+            location.reload();
         }
 
         // تعيين التواريخ الافتراضية
