@@ -75,7 +75,7 @@
 <script>
 // ---------------- CONFIG ----------------
 // ضع هنا رابط Web App الخاص بك (Apps Script) — عدّله إلى رابطك قبل النشر
-const GOOGLE_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxLScYO_blaMm8jdXxKrnvvVpuRLPCO1aNg1EYY7_rLN5hMHzmy0Gkv23jlstAJzmqZcQ/exec';
+const GOOGLE_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbypVU6KlNGpSevWO1GYgGi16SDMKue3GVK2dmNWcVg6581ifsIsjU5F1P5aD595CN_bxg/exec';
 
 // ---------------- State ----------------
 let records = [];
@@ -125,9 +125,49 @@ function exportToExcel(){ const data = records.slice().sort((a,b)=> new Date(b.t
   data.forEach(r=>{ csv += [esc(r.id), esc(r.name), esc(r.movement), esc(new Date(r.timestamp).toLocaleString('en-US',{hour12:false})), esc(r.source)].join(',') + '\n'; });
   const blob = new Blob(["\uFEFF" + csv], { type: 'text/csv;charset=utf-8;' }); const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = `Attendance_Records_${new Date().toISOString().slice(0,10)}.csv`; document.body.appendChild(a); a.click(); a.remove(); }
 
-function sendToGoogle(record){ try{ const params = new URLSearchParams(); params.append('records_batch', JSON.stringify([{ id: record.id, employee_id: record.name, movement_type: record.movement, timestamp: record.timestamp, source: record.source }])); // use no-cors for beacon fallback
-    fetch(GOOGLE_SCRIPT_URL, { method: 'POST', mode: 'no-cors', headers: { 'Content-Type': 'application/x-www-form-urlencoded' }, body: params.toString() })
-    .catch(e=>{ try{ if(navigator.sendBeacon){ const blob = new Blob([params.toString()], { type: 'application/x-www-form-urlencoded' }); navigator.sendBeacon(GOOGLE_SCRIPT_URL, blob); } }catch(_){} }); }catch(e){ console.warn(e); } }
+function sendToGoogle(record) {
+  try {
+    const data = {
+      records_batch: JSON.stringify([{
+        id: record.id,
+        employee_id: record.name,
+        movement_type: record.movement,
+        timestamp: record.timestamp,
+        source: record.source
+      }])
+    };
+
+    // استخدام fetch عادي مع CORS
+    fetch(GOOGLE_SCRIPT_URL, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/x-www-form-urlencoded',
+      },
+      body: new URLSearchParams(data)
+    })
+    .then(response => response.json())
+    .then(result => {
+      console.log('Success:', result);
+      if (!result.success) {
+        console.error('Server error:', result.error);
+      }
+    })
+    .catch(error => {
+      console.error('Error sending data:', error);
+      // Fallback: حاول مع navigator.sendBeacon
+      try {
+        const blob = new Blob([new URLSearchParams(data).toString()], { 
+          type: 'application/x-www-form-urlencoded' 
+        });
+        navigator.sendBeacon(GOOGLE_SCRIPT_URL, blob);
+      } catch (beaconError) {
+        console.error('Beacon also failed:', beaconError);
+      }
+    });
+  } catch(e) {
+    console.error('Error in sendToGoogle:', e);
+  }
+}
 
 // Init & Controls
 document.getElementById('startBtn').addEventListener('click', startScanner);
