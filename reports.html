@@ -14,57 +14,68 @@
         th {background-color: #f2f2f2;}
         .hidden {display: none;}
         .message {color: red; margin-top: 10px; font-weight: bold;}
+        .loading {color: blue; margin-top: 10px;}
+        .container {max-width: 1200px; margin: 0 auto;}
+        .form-section {background: #f9f9f9; padding: 15px; border-radius: 5px; margin-bottom: 20px;}
     </style>
 </head>
 <body>
+    <div class="container">
+        <h2>📊 نظام التقارير</h2>
 
-    <h2>📊 نظام التقارير</h2>
+        <!-- اختيار نوع التقرير -->
+        <div class="form-section">
+            <label for="reportType">اختر نوع التقرير:</label>
+            <select id="reportType" onchange="toggleReportForm()">
+                <option value="employee">تقرير موظف</option>
+                <option value="day">تقرير يوم معين</option>
+                <option value="period">تقرير مجمع لفترة</option>
+            </select>
+        </div>
 
-    <!-- اختيار نوع التقرير -->
-    <label for="reportType">اختر نوع التقرير:</label>
-    <select id="reportType" onchange="toggleReportForm()">
-        <option value="employee">تقرير موظف</option>
-        <option value="day">تقرير يوم معين</option>
-        <option value="period">تقرير مجمع لفترة</option>
-    </select>
+        <!-- نموذج تقرير موظف -->
+        <div id="employeeReportForm" class="form-section">
+            <h3>تقرير موظف فردي</h3>
+            <label>كود الموظف:</label>
+            <input type="text" id="employeeId" placeholder="ادخل الكود">
+            <label>من:</label>
+            <input type="date" id="fromDate">
+            <label>إلى:</label>
+            <input type="date" id="toDate">
+            <button onclick="fetchEmployeeReport()">عرض التقرير</button>
+        </div>
 
-    <!-- نموذج تقرير موظف -->
-    <div id="employeeReportForm">
-        <label>كود الموظف:</label>
-        <input type="text" id="employeeId" placeholder="ادخل الكود">
-        <label>من:</label>
-        <input type="date" id="fromDate">
-        <label>إلى:</label>
-        <input type="date" id="toDate">
-        <button onclick="fetchEmployeeReport()">عرض التقرير</button>
+        <!-- نموذج تقرير يوم معين -->
+        <div id="dayReportForm" class="form-section hidden">
+            <h3>تقرير يوم معين</h3>
+            <label>التاريخ:</label>
+            <input type="date" id="singleDay">
+            <button onclick="fetchDayReport()">عرض تقرير اليوم</button>
+        </div>
+
+        <!-- نموذج تقرير فترة (مجمع) -->
+        <div id="periodReportForm" class="form-section hidden">
+            <h3>تقرير فترة مجمع</h3>
+            <label>من:</label>
+            <input type="date" id="periodFrom">
+            <label>إلى:</label>
+            <input type="date" id="periodTo">
+            <button onclick="fetchPeriodReport()">عرض التقرير المجمع</button>
+        </div>
+
+        <div id="message" class="message"></div>
+        <div id="loading" class="loading hidden">جاري تحميل البيانات...</div>
+
+        <!-- جدول عرض النتائج -->
+        <table id="resultsTable" class="hidden">
+            <thead id="tableHead"></thead>
+            <tbody id="tableBody"></tbody>
+        </table>
     </div>
-
-    <!-- نموذج تقرير يوم معين -->
-    <div id="dayReportForm" class="hidden">
-        <label>التاريخ:</label>
-        <input type="date" id="singleDay">
-        <button onclick="fetchDayReport()">عرض تقرير اليوم</button>
-    </div>
-
-    <!-- نموذج تقرير فترة (مجمع) -->
-    <div id="periodReportForm" class="hidden">
-        <label>من:</label>
-        <input type="date" id="periodFrom">
-        <label>إلى:</label>
-        <input type="date" id="periodTo">
-        <button onclick="fetchPeriodReport()">عرض التقرير المجمع</button>
-    </div>
-
-    <div id="message" class="message"></div>
-
-    <!-- جدول عرض النتائج -->
-    <table id="resultsTable" class="hidden">
-        <thead id="tableHead"></thead>
-        <tbody id="tableBody"></tbody>
-    </table>
 
     <script>
-        const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbz3po03tTbdrUQeXfz0BsnwWtSa5RrRd8o4YI02KuI8t2L1SoanwbOH2Z2V1rLGs_QYvQ/exec"; // ضع رابط Google Apps Script هنا
+        // ⚠️ ضع رابط النشر هنا
+        const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxsg5pXgLCDgQKumsTMHq6q83AtZAOqWty57g49rUylPVKghKsu2Pwuuxxf3mnQFtgHmQ/exec";
 
         function toggleReportForm() {
             const type = document.getElementById("reportType").value;
@@ -75,6 +86,16 @@
             document.getElementById("resultsTable").classList.add("hidden");
         }
 
+        function showLoading(show) {
+            document.getElementById("loading").classList.toggle("hidden", !show);
+        }
+
+        function showMessage(message, isError = true) {
+            const messageEl = document.getElementById("message");
+            messageEl.innerHTML = message;
+            messageEl.style.color = isError ? 'red' : 'green';
+        }
+
         // ✅ جلب تقرير موظف
         async function fetchEmployeeReport() {
             const emp = document.getElementById("employeeId").value.trim();
@@ -82,53 +103,84 @@
             const to = document.getElementById("toDate").value;
 
             if (!emp || !from || !to) {
-                document.getElementById("message").innerHTML = "⚠ يرجى ملء جميع الحقول.";
+                showMessage("⚠ يرجى ملء جميع الحقول.");
                 return;
             }
 
-            const url = `${SCRIPT_URL}?action=singleReport&employee_id=${emp}&from=${from}&to=${to}`;
-            const res = await fetch(url);
-            const data = await res.json();
+            showLoading(true);
+            showMessage("");
 
-            if (!data.days || data.days.length === 0) {
-                document.getElementById("message").innerHTML = "⚠ لا توجد بيانات مطابقة.";
-                document.getElementById("resultsTable").classList.add("hidden");
-                return;
+            try {
+                const url = `${SCRIPT_URL}?action=singleReport&employee_id=${emp}&from=${from}&to=${to}`;
+                const res = await fetch(url);
+                const data = await res.json();
+
+                if (data.error) {
+                    showMessage("⚠ " + data.error);
+                    document.getElementById("resultsTable").classList.add("hidden");
+                    return;
+                }
+
+                if (!data.days || data.days.length === 0) {
+                    showMessage("⚠ لا توجد بيانات مطابقة.");
+                    document.getElementById("resultsTable").classList.add("hidden");
+                    return;
+                }
+
+                showMessage("");
+                renderTable(
+                    ["التاريخ", "الكود", "الاسم", "المهنة", "الدخول", "الخروج", "ساعات العمل", "الأوفر تايم"],
+                    data.days.map(d => [
+                        d.date, d.employee_id, d.name, d.occupation,
+                        d.first_in, d.last_out, d.work_hours_str, d.overtime_hours_str
+                    ])
+                );
+            } catch (error) {
+                showMessage("⚠ حدث خطأ في جلب البيانات: " + error.message);
+            } finally {
+                showLoading(false);
             }
-
-            document.getElementById("message").innerHTML = "";
-            renderTable(
-                ["التاريخ", "الكود", "الاسم", "المهنة", "الدخول", "الخروج", "ساعات العمل", "الأوفر تايم"],
-                data.days.map(d => [
-                    d.date, d.employee_id, d.name, d.occupation,
-                    d.first_in, d.last_out, d.work_hours_str, d.overtime_hours_str
-                ])
-            );
         }
 
         // ✅ جلب تقرير يومي
         async function fetchDayReport() {
             const day = document.getElementById("singleDay").value;
             if (!day) {
-                document.getElementById("message").innerHTML = "⚠ يرجى اختيار تاريخ.";
-                return;
-            }
-            const url = `${SCRIPT_URL}?action=dayReport&day=${day}`;
-            const data = await (await fetch(url)).json();
-
-            if (data.length === 0) {
-                document.getElementById("message").innerHTML = "⚠ لا توجد بيانات لهذا اليوم.";
+                showMessage("⚠ يرجى اختيار تاريخ.");
                 return;
             }
 
-            document.getElementById("message").innerHTML = "";
-            renderTable(
-                ["الكود", "الاسم", "المهنة", "الدخول", "الخروج", "ساعات العمل", "الأوفر تايم"],
-                data.map(d => [
-                    d.employee_id, d.name, d.occupation,
-                    d.first_in, d.last_out, d.work_hours_str, d.overtime_hours_str
-                ])
-            );
+            showLoading(true);
+            showMessage("");
+
+            try {
+                const url = `${SCRIPT_URL}?action=dayReport&day=${day}`;
+                const res = await fetch(url);
+                const data = await res.json();
+
+                if (data.error) {
+                    showMessage("⚠ " + data.error);
+                    return;
+                }
+
+                if (!data || data.length === 0) {
+                    showMessage("⚠ لا توجد بيانات لهذا اليوم.");
+                    return;
+                }
+
+                showMessage("");
+                renderTable(
+                    ["الكود", "الاسم", "المهنة", "الدخول", "الخروج", "ساعات العمل", "الأوفر تايم"],
+                    data.map(d => [
+                        d.employee_id, d.name, d.occupation,
+                        d.first_in, d.last_out, d.work_hours_str, d.overtime_hours_str
+                    ])
+                );
+            } catch (error) {
+                showMessage("⚠ حدث خطأ في جلب البيانات: " + error.message);
+            } finally {
+                showLoading(false);
+            }
         }
 
         // ✅ جلب تقرير مجمع
@@ -136,25 +188,44 @@
             const from = document.getElementById("periodFrom").value;
             const to = document.getElementById("periodTo").value;
             if (!from || !to) {
-                document.getElementById("message").innerHTML = "⚠ يرجى تحديد الفترة.";
-                return;
-            }
-            const url = `${SCRIPT_URL}?action=periodReport&from=${from}&to=${to}`;
-            const data = await (await fetch(url)).json();
-
-            if (Object.keys(data).length === 0) {
-                document.getElementById("message").innerHTML = "⚠ لا توجد بيانات فى هذه الفترة.";
+                showMessage("⚠ يرجى تحديد الفترة.");
                 return;
             }
 
-            document.getElementById("message").innerHTML = "";
-            renderTable(
-                ["الكود", "الاسم", "المهنة", "عدد الأيام", "إجمالي العمل", "إجمالي الأوفر"],
-                Object.values(data).map(d => [
-                    d.employee_id, d.name, d.occupation,
-                    d.days_present, d.total_work_hours_str, d.total_overtime_hours_str
-                ])
-            );
+            showLoading(true);
+            showMessage("");
+
+            try {
+                const url = `${SCRIPT_URL}?action=periodReport&from=${from}&to=${to}`;
+                const res = await fetch(url);
+                const data = await res.json();
+
+                if (data.error) {
+                    showMessage("⚠ " + data.error);
+                    return;
+                }
+
+                if (!data || Object.keys(data).length === 0) {
+                    showMessage("⚠ لا توجد بيانات فى هذه الفترة.");
+                    return;
+                }
+
+                showMessage("");
+                // تحويل الكائن إلى مصفوفة
+                const employeesArray = Object.keys(data).map(empId => data[empId]);
+                
+                renderTable(
+                    ["الكود", "الاسم", "المهنة", "عدد الأيام", "إجمالي العمل", "إجمالي الأوفر"],
+                    employeesArray.map(d => [
+                        d.employee_id || empId, d.name, d.occupation,
+                        d.days_present || 0, d.total_work_hours_str || "0:00", d.total_overtime_hours_str || "0:00"
+                    ])
+                );
+            } catch (error) {
+                showMessage("⚠ حدث خطأ في جلب البيانات: " + error.message);
+            } finally {
+                showLoading(false);
+            }
         }
 
         // ✅ دالة عرض الجدول
@@ -168,7 +239,21 @@
 
             table.classList.remove("hidden");
         }
-    </script>
 
+        // تعيين التواريخ الافتراضية
+        window.onload = function() {
+            const today = new Date().toISOString().split('T')[0];
+            const firstDay = new Date();
+            firstDay.setDate(1);
+            const firstDayStr = firstDay.toISOString().split('T')[0];
+            
+            // تعيين التواريخ الافتراضية
+            document.getElementById('fromDate').value = firstDayStr;
+            document.getElementById('toDate').value = today;
+            document.getElementById('singleDay').value = today;
+            document.getElementById('periodFrom').value = firstDayStr;
+            document.getElementById('periodTo').value = today;
+        };
+    </script>
 </body>
 </html>
