@@ -7,7 +7,6 @@
 <link rel="manifest" href="manifest.json">
 <meta name="theme-color" content="#10b981"/>
 <style>
-  /* الحفاظ على التنسيق الأصلي مع إضافات */
   body{font-family:Arial, sans-serif;background:#f3f4f6;color:#111;padding:0;margin:0;direction:rtl}
   .app{display:flex;min-height:100vh}
   .sidebar{width:72px;background:#06212a;color:#fff;display:flex;flex-direction:column;align-items:center;padding:12px;gap:12px}
@@ -80,7 +79,7 @@
 <script src="https://unpkg.com/html5-qrcode"></script>
 <script>
 // ---------------- CONFIG ----------------
-const GOOGLE_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzd97Sc7DtqBUTFjZ5MpNsmDw_afYcUzsWhrFA_cmZHrwU5jmbQdaezZCY8klzg1uvRGw/exec';
+const GOOGLE_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzeBugfSme93srGaJa5h5Kf_pFreNh9PgB39WAYq_VFryNRR2u8eMUkgaIwHNiVy0zA1A/exec';
 
 // ---------------- State ----------------
 let records = [];
@@ -99,7 +98,7 @@ function playBeep(){ try{ beepSound.currentTime = 0; beepSound.play(); }catch(e)
 
 function showConfirmation(record){ 
   const msg = document.getElementById('confirmMsg');
-  msg.textContent = `✅ تم تسجيل ${record.movement} لـ ${record.name}`;
+  msg.textContent = `✅ تم تسجيل ${record.movement_type} لـ ${record.employee_id}`;
   msg.style.display = 'block'; 
   setTimeout(()=>{ msg.style.display = 'none'; }, 2000); 
 }
@@ -126,13 +125,10 @@ function createLocalRecord(employeeId, movement){
   const now = new Date();
   return { 
     id: `local-${Date.now()}-${Math.random().toString(36).slice(2,8)}`,
-    name: String(employeeId).trim(), 
-    movement: movement, 
+    employee_id: String(employeeId).trim(), 
+    movement_type: movement, 
     timestamp: now.toISOString(),
-    date: now.toLocaleDateString('ar-EG'), 
-    time: now.toLocaleTimeString('ar-EG'), 
-    source: 'QR',
-    synced: false
+    source: 'QR'
   }; 
 }
 
@@ -179,7 +175,7 @@ function stopScanner(){
   currentScanner.stop().then(()=>{ 
     try{ currentScanner.clear(); }catch(e){}; 
     currentScanner = null; 
-    showConfirmation({movement: '', name: 'تم إيقاف الماسح.'});
+    showConfirmation({movement_type: '', employee_id: 'تم إيقاف الماسح.'});
   }).catch(err=>{ 
     console.warn('stop err', err); 
     currentScanner = null; 
@@ -199,7 +195,7 @@ function handleScanned(qr){
   scanCount++; 
   updateCounter(); 
   saveLocally(); 
-  sendToGoogle(record); 
+  sendToGoogle([record]); 
   playBeep(); 
   showConfirmation(record); 
 }
@@ -222,7 +218,7 @@ function manualAdd(){
   scanCount++; 
   updateCounter(); 
   saveLocally(); 
-  sendToGoogle(record); 
+  sendToGoogle([record]); 
   playBeep(); 
   showConfirmation(record); 
   document.getElementById('manualInput').value=''; 
@@ -230,15 +226,15 @@ function manualAdd(){
 
 function saveLocally(){ 
   try{ 
-    localStorage.setItem('attendance_records_v4', JSON.stringify(records));
-    localStorage.setItem('pending_records_v4', JSON.stringify(pendingRecords));
+    localStorage.setItem('attendance_records_final', JSON.stringify(records));
+    localStorage.setItem('pending_records_final', JSON.stringify(pendingRecords));
   }catch(e){} 
 }
 
 function loadLocally(){ 
   try{ 
-    const s = localStorage.getItem('attendance_records_v4');
-    const p = localStorage.getItem('pending_records_v4');
+    const s = localStorage.getItem('attendance_records_final');
+    const p = localStorage.getItem('pending_records_final');
     
     if(s){ 
       records = JSON.parse(s); 
@@ -265,8 +261,8 @@ function exportToExcel(){
   };
   
   data.forEach(r=>{ 
-    const status = r.synced ? 'مزامن' : 'في الانتظار';
-    csv += [esc(r.id), esc(r.name), esc(r.movement), esc(new Date(r.timestamp).toLocaleString('en-US',{hour12:false})), esc(r.source), esc(status)].join(',') + '\n'; 
+    const status = !pendingRecords.find(p => p.id === r.id) ? 'مزامن' : 'في الانتظار';
+    csv += [esc(r.id), esc(r.employee_id), esc(r.movement_type), esc(new Date(r.timestamp).toLocaleString('en-US',{hour12:false})), esc(r.source), esc(status)].join(',') + '\n'; 
   });
   
   const blob = new Blob(["\uFEFF" + csv], { type: 'text/csv;charset=utf-8;' }); 
@@ -278,55 +274,97 @@ function exportToExcel(){
   a.remove(); 
 }
 
-// دالة محسنة لإرسال البيانات
-function sendToGoogle(record) {
-  try {
-    const data = {
-      records_batch: JSON.stringify([{
-        id: record.id,
-        employee_id: record.name,
-        movement_type: record.movement,
-        timestamp: record.timestamp,
-        source: record.source
-      }])
-    };
-
-    fetch(GOOGLE_SCRIPT_URL, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/x-www-form-urlencoded',
-      },
-      body: new URLSearchParams(data)
-    })
-    .then(response => response.json())
-    .then(result => {
-      console.log('Success:', result);
-      if (result.success) {
-        // تحديث حالة السجل كمزامن
-        record.synced = true;
-        const index = pendingRecords.findIndex(r => r.id === record.id);
-        if (index !== -1) {
-          pendingRecords.splice(index, 1);
-        }
-        updateCounter();
-        saveLocally();
-      } else {
-        console.error('Server error:', result.error);
-      }
-    })
-    .catch(error => {
-      console.error('Error sending data:', error);
-      // سيتم إعادة المحاولة عند المزامنة
-    });
-  } catch(e) {
-    console.error('Error in sendToGoogle:', e);
+// دالة محسنة تماماً لإرسال البيانات
+function sendToGoogle(recordsToSend) {
+  if (!navigator.onLine) {
+    console.log('Offline - record saved locally only');
+    return;
   }
+
+  // التأكد من أن recordsToSend هي مصفوفة
+  if (!Array.isArray(recordsToSend)) {
+    recordsToSend = [recordsToSend];
+  }
+
+  console.log('Sending records to Google:', recordsToSend);
+
+  // الطريقة 1: إرسال كمصفوفة مباشرة (الأفضل)
+  const payload = JSON.stringify(recordsToSend);
+
+  fetch(GOOGLE_SCRIPT_URL, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: payload
+  })
+  .then(response => {
+    console.log('Response status:', response.status);
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+    return response.json();
+  })
+  .then(result => {
+    console.log('Server response:', result);
+    if (result.success) {
+      // إزالة السجلات التي تمت مزامنتها بنجاح
+      const syncedIds = result.saved_records.map(r => r.id);
+      pendingRecords = pendingRecords.filter(record => !syncedIds.includes(record.id));
+      
+      updateCounter();
+      saveLocally();
+      console.log('Records synced successfully:', syncedIds.length);
+      
+      if (recordsToSend.length === 1) {
+        showConfirmation({...recordsToSend[0], status: 'مزامن'});
+      }
+    } else {
+      console.error('Server reported error:', result.error);
+      showError(`خطأ في الخادم: ${result.error}`);
+    }
+  })
+  .catch(error => {
+    console.error('Network error:', error);
+    // الطريقة 2: محاولة بديلة باستخدام FormData
+    retryWithFormData(recordsToSend);
+  });
 }
 
-// دالة المزامنة
+// طريقة بديلة باستخدام FormData
+function retryWithFormData(recordsToSend) {
+  console.log('Retrying with FormData...');
+  
+  const formData = new URLSearchParams();
+  formData.append('records_batch', JSON.stringify(recordsToSend));
+
+  fetch(GOOGLE_SCRIPT_URL, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/x-www-form-urlencoded',
+    },
+    body: formData
+  })
+  .then(response => response.json())
+  .then(result => {
+    console.log('FormData response:', result);
+    if (result.success) {
+      const syncedIds = result.saved_records.map(r => r.id);
+      pendingRecords = pendingRecords.filter(record => !syncedIds.includes(record.id));
+      updateCounter();
+      saveLocally();
+    }
+  })
+  .catch(error => {
+    console.error('FormData also failed:', error);
+    // السجلات ستبقى في pendingRecords للمحاولة لاحقاً
+  });
+}
+
+// دالة المزامنة المحسنة
 function syncPendingRecords() {
   if (pendingRecords.length === 0) {
-    showConfirmation({movement: '', name: 'لا توجد سجلات في الانتظار للمزامنة'});
+    showConfirmation({movement_type: '', employee_id: 'لا توجد سجلات في الانتظار للمزامنة'});
     return;
   }
 
@@ -335,43 +373,69 @@ function syncPendingRecords() {
     return;
   }
 
-  showConfirmation({movement: '', name: `جاري مزامنة ${pendingRecords.length} سجل...`});
+  showConfirmation({movement_type: '', employee_id: `جاري مزامنة ${pendingRecords.length} سجل...`});
 
-  const data = {
-    records_batch: JSON.stringify(pendingRecords.map(r => ({
-      id: r.id,
-      employee_id: r.name,
-      movement_type: r.movement,
-      timestamp: r.timestamp,
-      source: r.source
-    })))
-  };
+  console.log('Syncing pending records:', pendingRecords);
+
+  // استخدام الطريقة المباشرة
+  const payload = JSON.stringify(pendingRecords);
 
   fetch(GOOGLE_SCRIPT_URL, {
     method: 'POST',
     headers: {
-      'Content-Type': 'application/x-www-form-urlencoded',
+      'Content-Type': 'application/json',
     },
-    body: new URLSearchParams(data)
+    body: payload
   })
-  .then(response => response.json())
+  .then(response => {
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+    return response.json();
+  })
   .then(result => {
+    console.log('Sync response:', result);
     if (result.success) {
-      // تحديث جميع السجلات كمزامنة
-      pendingRecords.forEach(record => {
-        record.synced = true;
-      });
-      pendingRecords = [];
+      // إزالة السجلات التي تمت مزامنتها بنجاح
+      const syncedIds = result.saved_records.map(r => r.id);
+      pendingRecords = pendingRecords.filter(record => !syncedIds.includes(record.id));
+      
       updateCounter();
       saveLocally();
-      showConfirmation({movement: '', name: `تمت مزامنة ${result.saved_count} سجل بنجاح`});
+      showConfirmation({movement_type: '', employee_id: `تمت مزامنة ${result.saved_count} سجل بنجاح`});
     } else {
       showError(`خطأ في المزامنة: ${result.error}`);
     }
   })
   .catch(error => {
     console.error('Sync error:', error);
-    showError('فشل في المزامنة. تحقق من الاتصال وحاول مرة أخرى.');
+    // محاولة بـ FormData
+    const formData = new URLSearchParams();
+    formData.append('records_batch', JSON.stringify(pendingRecords));
+
+    fetch(GOOGLE_SCRIPT_URL, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/x-www-form-urlencoded',
+      },
+      body: formData
+    })
+    .then(response => response.json())
+    .then(result => {
+      if (result.success) {
+        const syncedIds = result.saved_records.map(r => r.id);
+        pendingRecords = pendingRecords.filter(record => !syncedIds.includes(record.id));
+        updateCounter();
+        saveLocally();
+        showConfirmation({movement_type: '', employee_id: `تمت مزامنة ${result.saved_count} سجل بنجاح`});
+      } else {
+        showError(`خطأ في المزامنة: ${result.error}`);
+      }
+    })
+    .catch(finalError => {
+      console.error('Final sync error:', finalError);
+      showError('فشل في المزامنة. تحقق من الاتصال وحاول مرة أخرى.');
+    });
   });
 }
 
@@ -382,6 +446,7 @@ document.getElementById('manualAddBtn').addEventListener('click', manualAdd);
 document.getElementById('exportBtn').addEventListener('click', exportToExcel);
 document.getElementById('syncBtn').addEventListener('click', syncPendingRecords);
 
+// تحميل البيانات المحفوظة
 loadLocally();
 
 // Service Worker registration for PWA
@@ -402,13 +467,31 @@ function updateOnlineStatus(){
     
   // المزامنة التلقائية عند استعادة الاتصال
   if (navigator.onLine && pendingRecords.length > 0) {
-    setTimeout(syncPendingRecords, 1000);
+    setTimeout(() => {
+      showConfirmation({movement_type: '', employee_id: 'الاتصال متاح - جاري المزامنة التلقائية...'});
+      syncPendingRecords();
+    }, 2000);
   }
 }
 
 window.addEventListener('online', updateOnlineStatus); 
 window.addEventListener('offline', updateOnlineStatus); 
 updateOnlineStatus();
+
+// اختبار الاتصال عند التحميل
+window.addEventListener('load', function() {
+  fetch(GOOGLE_SCRIPT_URL + '?action=dayReport&day=2024-01-01')
+    .then(response => {
+      if (response.ok) {
+        console.log('Connection to Google Apps Script is working');
+      } else {
+        console.warn('Connection test failed');
+      }
+    })
+    .catch(error => {
+      console.error('Connection test error:', error);
+    });
+});
 </script>
 </body>
 </html>
