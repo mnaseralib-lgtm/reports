@@ -1,93 +1,172 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="ar" dir="rtl">
 <head>
-<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>التقارير - نظام الحضور</title>
-<style>
-  body{font-family:Arial, sans-serif;background:#f3f4f6;color:#111;padding:18px;direction:rtl}
-  .card{max-width:980px;margin:0 auto;background:#fff;padding:18px;border-radius:12px;box-shadow:0 6px 24px rgba(0,0,0,0.08)}
-  h1{font-size:18px}
-  label{display:block;margin-top:10px}
-  input,select,button{padding:10px;border-radius:8px;border:1px solid #e5e7eb}
-  .row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
-  table{width:100%;border-collapse:collapse;margin-top:12px}
-  th,td{border:1px solid #e5e7eb;padding:8px;text-align:center}
-  .muted{color:#6b7280;font-size:13px}
-</style>
+    <meta charset="UTF-8">
+    <title>تقارير الحضور</title>
+    <style>
+        body { font-family: 'Tajawal', sans-serif; background: #f5f5f5; margin: 0; padding: 0; }
+        header { background: #007bff; color: white; padding: 15px; text-align: center; font-size: 22px; }
+        section { padding: 20px; }
+        .report-box { background: white; padding: 15px; border-radius: 10px; margin-bottom: 20px; box-shadow: 0 2px 5px rgba(0,0,0,.1); }
+        input, button, select { padding: 8px; margin: 5px; border-radius: 5px; border: 1px solid #ccc; }
+        button { cursor: pointer; background: #007bff; color: white; }
+        table { width: 100%; border-collapse: collapse; margin-top: 15px; }
+        th, td { border: 1px solid #ddd; padding: 8px; text-align: center; }
+        th { background: #007bff; color: white; }
+    </style>
 </head>
 <body>
-<div class="card">
-  <h1>التقارير</h1>
-  <p class="muted">قاعدة احتساب اليوم = 9 ساعات؛ أي يوم محسوب إذا كانت المدة بين أوّل دخول وآخر انصراف في نفس اليوم >= 9 ساعة.</p>
+<header>📊 تقارير نظام الحضور</header>
 
-  <!-- تقرير عامل واحد -->
-  <section>
-    <h2>تقرير عامل واحد (بالفترة)</h2>
-    <div class="row">
-      <input type="text" id="workerId" placeholder="رمز أو اسم العامل">
-      <input type="date" id="fromDate">
-      <input type="date" id="toDate">
-      <button id="fetchWorker">جلب التقرير</button>
+<section>
+    <!-- ✅ تقرير موظف (فترة زمنية) -->
+    <div class="report-box">
+        <h3>تقرير موظف</h3>
+        <label>رمز الموظف:</label>
+        <input type="text" id="empId">
+        <label>من:</label>
+        <input type="date" id="fromDate">
+        <label>إلى:</label>
+        <input type="date" id="toDate">
+        <button onclick="getSingleReport()">عرض التقرير</button>
+        <div id="singleResult"></div>
     </div>
-    <div id="workerReport"></div>
-  </section>
 
-  <hr>
-  <!-- تقرير مجمع لليوم -->
-  <section>
-    <h2>تقرير مجمع لليوم</h2>
-    <div class="row">
-      <input type="date" id="singleDay">
-      <button id="fetchDay">جلب تقرير اليوم</button>
+    <!-- ✅ تقرير يوم كامل -->
+    <div class="report-box">
+        <h3>تقرير يوم لجميع الموظفين</h3>
+        <label>التاريخ:</label>
+        <input type="date" id="dayReport">
+        <button onclick="getDayReport()">عرض التقرير</button>
+        <div id="dayResult"></div>
     </div>
-    <div id="dayReport"></div>
-  </section>
 
-  <hr>
-  <!-- تقرير مجمع لفترة -->
-  <section>
-    <h2>تقرير مجمع لفترة</h2>
-    <div class="row">
-      <input type="date" id="pFrom">
-      <input type="date" id="pTo">
-      <button id="fetchPeriod">جلب تقرير الفترة</button>
+    <!-- ✅ تقرير فترة مجمع -->
+    <div class="report-box">
+        <h3>تقرير مجمع لفترة زمنية</h3>
+        <label>من:</label>
+        <input type="date" id="fromPeriod">
+        <label>إلى:</label>
+        <input type="date" id="toPeriod">
+        <button onclick="getPeriodReport()">عرض التقرير</button>
+        <div id="periodResult"></div>
     </div>
-    <div id="periodReport"></div>
-  </section>
-</div>
+</section>
 
 <script>
-const GOOGLE_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwB7pk5_iFhFJ4ShINrNb308zt9ZjJDj0H9WqgnFesjyqEaBZrD5Woq5Gihp2MW6vsN-A/exec';
+    const GOOGLE_SCRIPT_URL = "ضع هنا رابط Web App النهائي من Apps Script";
 
-async function api(action, params){ const url = new URL(GOOGLE_SCRIPT_URL); url.searchParams.set('action', action); Object.keys(params||{}).forEach(k=> url.searchParams.set(k, params[k])); try{ const res = await fetch(url); const data = await res.json(); return data; }catch(e){ console.error(e); alert('خطأ في الوصول إلى الخادم. تأكد أن Web App منشور أو تحقق من الشبكة.'); return null; } }
+    /* ✅ 1. تقرير موظف */
+    function getSingleReport() {
+        const emp = document.getElementById("empId").value;
+        const from = document.getElementById("fromDate").value;
+        const to = document.getElementById("toDate").value;
 
-// Worker report
-document.getElementById('fetchWorker').addEventListener('click', async ()=>{
-  const id = document.getElementById('workerId').value.trim(); const from = document.getElementById('fromDate').value; const to = document.getElementById('toDate').value;
-  if(!id || !from || !to){ alert('ادخل رمز العامل والفترة'); return; }
-  const data = await api('singleReport',{ employee_id: id, from: from, to: to }); if(!data) return;
-  // data.days = [{date, first_in, last_out, last_out_type, duration_hours}]
-  const container = document.getElementById('workerReport'); container.innerHTML = '';
-  const title = document.createElement('div'); title.innerHTML = `<strong>نتيجة: ${data.employee_id} — الأيام المُحتسبة: ${data.counted_days}</strong>`; container.appendChild(title);
-  const tbl = document.createElement('table'); tbl.innerHTML = `<thead><tr><th>التاريخ</th><th>أول دخول</th><th>أخر انصراف</th><th>حالة الانصراف</th><th>المدة (ساعات)</th></tr></thead>`;
-  const tbody = document.createElement('tbody'); data.days.forEach(d=>{ const tr = document.createElement('tr'); tr.innerHTML = `<td>${d.date}</td><td>${d.first_in||'-'}</td><td>${d.last_out||'-'}</td><td>${d.last_out_type||'-'}</td><td>${d.duration_hours!=null?d.duration_hours.toFixed(2):'-'}</td>`; tbody.appendChild(tr); }); tbl.appendChild(tbody); container.appendChild(tbl);
-});
+        if(!emp || !from || !to){
+            alert("⚠ يرجى إدخال جميع البيانات");
+            return;
+        }
 
-// Day report
-document.getElementById('fetchDay').addEventListener('click', async ()=>{
-  const day = document.getElementById('singleDay').value; if(!day){ alert('اختر اليوم'); return; }
-  const data = await api('dayReport',{ day: day }); if(!data) return; const container = document.getElementById('dayReport'); container.innerHTML = '';
-  const tbl = document.createElement('table'); tbl.innerHTML = `<thead><tr><th>رمز العامل</th><th>أول دخول</th><th>أخر انصراف</th><th>المدة (ساعات)</th><th>يوم محسوب (>=9h)</th></tr></thead>`;
-  const tbody = document.createElement('tbody'); data.forEach(r=>{ const tr = document.createElement('tr'); tr.innerHTML = `<td>${r.employee_id}</td><td>${r.first_in||'-'}</td><td>${r.last_out||'-'}</td><td>${r.duration_hours!=null?r.duration_hours.toFixed(2):'-'}</td><td>${r.counted? 'نعم':'لا'}</td>`; tbody.appendChild(tr); }); tbl.appendChild(tbody); container.appendChild(tbl);
-});
+        fetch(`${GOOGLE_SCRIPT_URL}?action=singleReport&employee_id=${emp}&from=${from}&to=${to}`)
+        .then(res => res.json())
+        .then(data => {
+            if(data.status !== "ok") {
+                document.getElementById("singleResult").innerHTML = `<p>⚠ لا توجد بيانات</p>`;
+                return;
+            }
 
-// Period report
-document.getElementById('fetchPeriod').addEventListener('click', async ()=>{
-  const from = document.getElementById('pFrom').value; const to = document.getElementById('pTo').value; if(!from || !to){ alert('اختر الفترة'); return; }
-  const data = await api('periodReport',{ from: from, to: to }); if(!data) return; const container = document.getElementById('periodReport'); container.innerHTML = '';
-  const tbl = document.createElement('table'); tbl.innerHTML = `<thead><tr><th>رمز العامل</th><th>أيام محسوبة</th></tr></thead>`;
-  const tbody = document.createElement('tbody'); Object.keys(data).forEach(emp=>{ const tr = document.createElement('tr'); tr.innerHTML = `<td>${emp}</td><td>${data[emp]}</td>`; tbody.appendChild(tr); }); tbl.appendChild(tbody); container.appendChild(tbl);
-});
+            let html = `<table>
+                <tr>
+                    <th>التاريخ</th>
+                    <th>رمز الموظف</th>
+                    <th>أول دخول</th>
+                    <th>آخر خروج</th>
+                    <th>ساعات العمل</th>
+                    <th>ساعات إضافية</th>
+                </tr>`;
+
+            data.days.forEach(d => {
+                html += `<tr>
+                    <td>${d.date}</td>
+                    <td>${d.employee_id}</td>
+                    <td>${d.first_in || '-'}</td>
+                    <td>${d.last_out || '-'}</td>
+                    <td>${d.work_hours?.toFixed(2) || '0'}</td>
+                    <td>${d.overtime_hours?.toFixed(2) || '0'}</td>
+                </tr>`;
+            });
+
+            html += `</table>
+            <p>✅ إجمالي أيام الحضور: <b>${data.total_days_present}</b></p>
+            <p>⏱ إجمالي ساعات العمل: <b>${data.total_work_hours.toFixed(2)}</b></p>
+            <p>➕ إجمالي الساعات الإضافية: <b>${data.total_overtime_hours.toFixed(2)}</b></p>`;
+
+            document.getElementById("singleResult").innerHTML = html;
+        });
+    }
+
+    /* ✅ 2. تقرير يوم */
+    function getDayReport() {
+        const day = document.getElementById("dayReport").value;
+        if(!day){ alert("⚠ اختر تاريخاً"); return; }
+
+        fetch(`${GOOGLE_SCRIPT_URL}?action=dayReport&day=${day}`)
+        .then(res => res.json())
+        .then(data => {
+            let html = `<table>
+                <tr>
+                    <th>رمز الموظف</th>
+                    <th>أول دخول</th>
+                    <th>آخر خروج</th>
+                    <th>ساعات العمل</th>
+                    <th>ساعات إضافية</th>
+                </tr>`;
+
+            data.forEach(d => {
+                html += `<tr>
+                    <td>${d.employee_id}</td>
+                    <td>${d.first_in || '-'}</td>
+                    <td>${d.last_out || '-'}</td>
+                    <td>${d.work_hours?.toFixed(2) || '0'}</td>
+                    <td>${d.overtime_hours?.toFixed(2) || '0'}</td>
+                </tr>`;
+            });
+
+            html += `</table>`;
+            document.getElementById("dayResult").innerHTML = html;
+        });
+    }
+
+    /* ✅ 3. تقرير فترة مجمع */
+    function getPeriodReport() {
+        const from = document.getElementById("fromPeriod").value;
+        const to = document.getElementById("toPeriod").value;
+
+        fetch(`${GOOGLE_SCRIPT_URL}?action=periodReport&from=${from}&to=${to}`)
+        .then(res => res.json())
+        .then(data => {
+            let html = `<table>
+                <tr>
+                    <th>رمز الموظف</th>
+                    <th>عدد أيام الحضور</th>
+                    <th>إجمالي ساعات العمل</th>
+                    <th>إجمالي أوفر تايم</th>
+                </tr>`;
+
+            for(let emp in data){
+                html += `<tr>
+                    <td>${emp}</td>
+                    <td>${data[emp].days_present}</td>
+                    <td>${data[emp].total_work_hours.toFixed(2)}</td>
+                    <td>${data[emp].total_overtime_hours.toFixed(2)}</td>
+                </tr>`;
+            }
+
+            html += `</table>`;
+            document.getElementById("periodResult").innerHTML = html;
+        });
+    }
 </script>
+
 </body>
 </html>
