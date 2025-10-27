@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="ar" dir="rtl">
 <head>
-  <meta charset="UTF-8" />
+  <meta charset="UTF-8">
   <title>تقارير الحضور</title>
   <style>
     body { font-family: Tahoma, sans-serif; background-color: #f4f6f9; margin: 0; padding: 0; }
@@ -10,7 +10,7 @@
     .card { background: white; padding: 15px; margin-bottom: 20px; border-radius: 8px; box-shadow: 0 0 10px rgba(0,0,0,0.1); }
     .row { display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 10px; align-items: center; }
     label { font-weight: bold; }
-    input, select, button { padding: 8px; border-radius: 5px; border: 1px solid #ccc; }
+    input, button { padding: 8px; border-radius: 5px; border: 1px solid #ccc; }
     button { background: #007bff; color: white; cursor: pointer; }
     button:hover { background: #0056b3; }
     .export-btn { background-color: #28a745 !important; }
@@ -21,55 +21,51 @@
   </style>
 </head>
 <body>
-  <header>📊 تقارير الحضور والانصراف</header>
 
-  <div class="container">
+<header>📊 تقارير الحضور والانصراف</header>
 
-    <!-- 📌 تقرير موظف -->
-    <div class="card">
-      <h3>🔹 تقرير موظف لفترة محددة</h3>
-      <div class="row">
-        <label>كود الموظف:</label>
-        <input type="text" id="employeeCodeInput" placeholder="اكتب كود الموظف">
-        <label>من:</label><input type="date" id="fromDate">
-        <label>إلى:</label><input type="date" id="toDate">
-        <button id="btnSingle">عرض</button>
-        <button class="export-btn" id="exportSingle">تصدير CSV</button>
-      </div>
-      <div id="singleReportArea"></div>
+<div class="container">
+
+  <!-- ✅ تقرير موظف -->
+  <div class="card">
+    <h3>📌 تقرير موظف لفترة زمنية</h3>
+    <div class="row">
+      <label>كود الموظف:</label>
+      <input type="text" id="employeeCodeInput" placeholder="مثال: 102">
+      <label>من:</label><input type="date" id="fromDate">
+      <label>إلى:</label><input type="date" id="toDate">
+      <button id="btnSingle">عرض التقرير</button>
     </div>
-
-    <!-- 📌 تقرير يومي -->
-    <div class="card">
-      <h3>🔹 تقرير يومي لجميع الموظفين</h3>
-      <div class="row">
-        <label>التاريخ:</label><input type="date" id="dayDate">
-        <button id="btnDay">عرض</button>
-        <button class="export-btn" id="exportDay">تصدير CSV</button>
-      </div>
-      <div id="dayReportArea"></div>
-    </div>
-
+    <div id="singleReportArea"></div>
   </div>
 
+  <!-- ✅ تقرير يوم واحد لكل الموظفين -->
+  <div class="card">
+    <h3>📌 تقرير يومي لكافة الموظفين</h3>
+    <div class="row">
+      <label>التاريخ:</label><input type="date" id="dayDate">
+      <button id="btnDay">عرض التقرير</button>
+    </div>
+    <div id="dayReportArea"></div>
+  </div>
+
+</div>
+
 <script>
-  const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwwXAovOaYSqPe4YLA4tawUOu0OHNYDehPmwNCRgPZ7CgcNdrvf5veiHlPwy1GVpFDe0g/exec";
+  // ⚠️ ضع رابط Web App الخاص بك (يجب أن ينتهي بـ /exec)
+  const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzt0AmkfF-KUEcuvN5FeRW5U5FE8nK7l7q0h5Y7bpJEzFtcoM3m7JlOwWCH1RMOnRi8AA/exec";
 
   async function api(action, params={}) {
     const url = new URL(GOOGLE_SCRIPT_URL);
     url.searchParams.set("action", action);
-    Object.entries(params).forEach(([key, val]) => url.searchParams.set(key, val));
-    try {
-      const res = await fetch(url);
-      return res.json();
-    } catch {
-      alert("⚠ لم يتم الاتصال بالخادم. تأكد من نشر Web App بشكل صحيح");
-    }
+    Object.entries(params).forEach(([k, v]) => url.searchParams.set(k, v));
+    const response = await fetch(url);
+    return response.json();
   }
 
-  function renderRows(containerId, rows) {
+  function renderTable(containerId, rows) {
     if (!rows || rows.length === 0) {
-      document.getElementById(containerId).innerHTML = "<p class='message'>⚠ لا توجد بيانات مطابقة للبحث</p>";
+      document.getElementById(containerId).innerHTML = `<p class="message">⚠ لا توجد بيانات مطابقة للبحث</p>`;
       return;
     }
     let table = `<table>
@@ -77,9 +73,10 @@
         <tr>
           <th>كود الموظف</th><th>الاسم</th><th>المهنة</th><th>الفئة</th>
           <th>وقت الدخول</th><th>وقت الخروج</th>
-          <th>ساعات العمل</th><th>الساعات الإضافية</th>
+          <th>ساعات العمل</th><th>الاضافي</th>
         </tr>
-      </thead><tbody>`;
+      </thead>
+      <tbody>`;
     rows.forEach(r => {
       table += `<tr>
         <td>${r.employee_id}</td>
@@ -96,24 +93,22 @@
     document.getElementById(containerId).innerHTML = table;
   }
 
+  // 📌 تقرير موظف
   document.getElementById("btnSingle").onclick = async () => {
     const emp = document.getElementById("employeeCodeInput").value.trim();
     const from = document.getElementById("fromDate").value;
     const to = document.getElementById("toDate").value;
-    if (!emp || !from || !to) return alert("⚠ يرجى إدخال كود الموظف وتحديد الفترة");
-
+    if (!emp || !from || !to) return alert("⚠ يجب إدخال كود الموظف وتحديد الفترة الزمنية");
     const data = await api("singleReport", { employee_id: emp, from, to });
-    if (!data || data.status !== "ok") return renderRows("singleReportArea", []);
-    const rows = data.days.map(d => d);
-    renderRows("singleReportArea", rows);
+    renderTable("singleReportArea", data.days || []);
   };
 
+  // 📌 تقرير يومي
   document.getElementById("btnDay").onclick = async () => {
     const day = document.getElementById("dayDate").value;
-    if (!day) return alert("⚠ يرجى اختيار التاريخ");
-
-    const rows = await api("dayReport", { day });
-    renderRows("dayReportArea", rows);
+    if (!day) return alert("⚠ يجب اختيار اليوم أولاً");
+    const data = await api("dayReport", { day });
+    renderTable("dayReportArea", data);
   };
 </script>
 </body>
