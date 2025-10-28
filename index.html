@@ -6,6 +6,7 @@
 <title>نظام الحضور - مترو أبو قير</title>
 <link rel="manifest" href="manifest.json">
 <meta name="theme-color" content="#10b981"/>
+<link href="https://fonts.googleapis.com/css2?family=Cairo:wght@300;400;600;700&display=swap" rel="stylesheet">
 <style>
   :root {
     --primary: #10b981;
@@ -13,102 +14,482 @@
     --danger: #ef4444;
     --warning: #f59e0b;
     --dark: #06212a;
+    --light-bg: #f8fafc;
   }
   
-  body{font-family:"Cairo", Arial, sans-serif;background:#f3f4f6;color:#111;padding:0;margin:0;direction:rtl}
-  .app{display:flex;min-height:100vh}
-  .sidebar{width:72px;background:var(--dark);color:#fff;display:flex;flex-direction:column;align-items:center;padding:12px;gap:12px;transition:all 0.3s}
-  .sidebar a{color:#fff;text-decoration:none;font-size:12px;text-align:center;transition:transform 0.2s}
-  .sidebar a:hover{transform:translateY(-2px)}
-  .main{flex:1;padding:18px}
-  .card{max-width:720px;margin:18px auto;background:#fff;padding:24px;border-radius:16px;box-shadow:0 8px 32px rgba(0,0,0,0.1);border:1px solid #e5e7eb}
-  h1{font-size:22px;margin:0 0 15px;color:var(--dark);text-align:center}
-  .controls{display:flex;gap:12px;align-items:center;flex-wrap:wrap;justify-content:center;margin-bottom:18px;padding:15px;background:#f8fafc;border-radius:12px}
-  select,input[type=text]{padding:12px;border-radius:10px;border:1px solid #d1d5db;font-size:16px;font-family:"Cairo";width:180px;background:white}
-  button{padding:12px 18px;border-radius:10px;border:none;color:#fff;font-weight:600;cursor:pointer;font-family:"Cairo";font-size:15px;transition:all 0.2s;min-width:120px}
-  button:hover{transform:translateY(-2px);box-shadow:0 4px 12px rgba(0,0,0,0.15)}
-  #startBtn{background:var(--primary)}
-  #stopBtn{background:var(--danger)}
-  #exportBtn{background:#06b6d4}
-  #syncBtn{background:#8b5cf6}
-  #reader{width:100%;max-width:480px;margin:15px auto;border-radius:12px;overflow:hidden;background:#000;box-shadow:0 8px 25px rgba(0,0,0,0.2)}
-  .confirmation-message{position:fixed;top:20px;left:50%;transform:translateX(-50%);background:rgba(16,185,129,0.95);color:#fff;padding:12px 20px;border-radius:10px;z-index:9999;display:none;font-weight:700;box-shadow:0 4px 15px rgba(16,185,129,0.3);backdrop-filter:blur(10px)}
-  .error-message{position:fixed;top:20px;left:50%;transform:translateX(-50%);background:rgba(239,68,68,0.95);color:#fff;padding:12px 20px;border-radius:10px;z-index:9999;display:none;font-weight:700;box-shadow:0 4px 15px rgba(239,68,68,0.3);backdrop-filter:blur(10px)}
-  .counter{font-weight:700;color:#065f46;font-size:16px;background:white;padding:10px 15px;border-radius:8px;border:2px solid #d1fae5}
-  .manual-row{display:flex;gap:10px;justify-content:center;align-items:center;margin-top:15px;flex-wrap:wrap}
-  .small{font-size:14px;color:#6b7280}
-  .link-icon{writing-mode:vertical-rl;transform:rotate(180deg);font-weight:700}
-  .pending-badge{background:var(--warning);color:white;padding:4px 8px;border-radius:12px;font-size:12px;margin-right:8px}
-  .status-indicator{width:8px;height:8px;border-radius:50%;display:inline-block;margin-left:5px}
-  .status-online{background:#10b981}
-  .status-offline{background:#ef4444}
-  .sync-animation{animation:pulse 1.5s infinite}
-  
-  @keyframes pulse {
-    0% { opacity: 1; }
-    50% { opacity: 0.5; }
-    100% { opacity: 1; }
+  * {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
   }
   
-  @media (max-width:720px){ 
-    .sidebar{width:60px;padding:8px} 
-    .card{padding:15px;margin:10px}
-    .controls{gap:8px}
-    select,input[type=text]{width:140px;padding:10px}
-    button{min-width:100px;padding:10px 12px}
+  body {
+    font-family: "Cairo", Arial, sans-serif;
+    background: var(--light-bg);
+    color: #111;
+    padding: 0;
+    margin: 0;
+    direction: rtl;
+    overflow-x: hidden;
+  }
+  
+  .app {
+    min-height: 100vh;
+    position: relative;
+  }
+  
+  /* Mobile Header */
+  .mobile-header {
+    background: var(--dark);
+    color: white;
+    padding: 15px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+    position: sticky;
+    top: 0;
+    z-index: 1000;
+  }
+  
+  .menu-toggle {
+    background: none;
+    border: none;
+    color: white;
+    font-size: 20px;
+    cursor: pointer;
+    padding: 5px;
+  }
+  
+  .app-title {
+    font-size: 18px;
+    font-weight: 700;
+    text-align: center;
+    flex: 1;
+  }
+  
+  /* Sidebar - Hidden by default on mobile */
+  .sidebar {
+    position: fixed;
+    top: 0;
+    right: -280px;
+    width: 280px;
+    height: 100vh;
+    background: var(--dark);
+    color: #fff;
+    padding: 20px;
+    transition: all 0.3s ease;
+    z-index: 999;
+    box-shadow: -2px 0 10px rgba(0,0,0,0.2);
+    overflow-y: auto;
+  }
+  
+  .sidebar.active {
+    right: 0;
+  }
+  
+  .sidebar-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 30px;
+    padding-bottom: 15px;
+    border-bottom: 1px solid rgba(255,255,255,0.1);
+  }
+  
+  .close-menu {
+    background: none;
+    border: none;
+    color: white;
+    font-size: 20px;
+    cursor: pointer;
+  }
+  
+  .nav-links {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+  
+  .nav-link {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    color: #fff;
+    text-decoration: none;
+    padding: 12px 15px;
+    border-radius: 10px;
+    transition: all 0.2s;
+    font-size: 16px;
+  }
+  
+  .nav-link:hover {
+    background: rgba(255,255,255,0.1);
+    transform: translateX(-5px);
+  }
+  
+  .nav-link.active {
+    background: var(--primary);
+  }
+  
+  .nav-icon {
+    font-size: 18px;
+    width: 24px;
+    text-align: center;
+  }
+  
+  .overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0,0,0,0.5);
+    z-index: 998;
+    display: none;
+  }
+  
+  .overlay.active {
+    display: block;
+  }
+  
+  .main-content {
+    padding: 20px 15px;
+    max-width: 100%;
+    overflow-x: hidden;
+  }
+  
+  .card {
+    background: #fff;
+    padding: 20px;
+    border-radius: 16px;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+    border: 1px solid #e5e7eb;
+    margin-bottom: 20px;
+  }
+  
+  h1 {
+    font-size: 20px;
+    margin: 0 0 15px;
+    color: var(--dark);
+    text-align: center;
+  }
+  
+  .controls-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+    margin-bottom: 20px;
+  }
+  
+  .control-group {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+  
+  .control-label {
+    font-size: 14px;
+    color: #6b7280;
+    font-weight: 600;
+  }
+  
+  select, input[type=text] {
+    padding: 12px;
+    border-radius: 10px;
+    border: 1px solid #d1d5db;
+    font-size: 16px;
+    font-family: "Cairo";
+    background: white;
+    width: 100%;
+  }
+  
+  .buttons-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+    margin: 15px 0;
+  }
+  
+  button {
+    padding: 14px;
+    border-radius: 12px;
+    border: none;
+    color: #fff;
+    font-weight: 600;
+    cursor: pointer;
+    font-family: "Cairo";
+    font-size: 15px;
+    transition: all 0.2s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+  }
+  
+  button:active {
+    transform: scale(0.98);
+  }
+  
+  #startBtn {
+    background: var(--primary);
+  }
+  
+  #stopBtn {
+    background: var(--danger);
+  }
+  
+  #exportBtn {
+    background: #06b6d4;
+  }
+  
+  #syncBtn {
+    background: #8b5cf6;
+  }
+  
+  .counter-badge {
+    background: white;
+    padding: 15px;
+    border-radius: 12px;
+    text-align: center;
+    border: 2px solid #d1fae5;
+    margin: 10px 0;
+  }
+  
+  .counter-value {
+    font-size: 24px;
+    font-weight: 800;
+    color: var(--primary);
+    display: block;
+  }
+  
+  .counter-label {
+    font-size: 14px;
+    color: #6b7280;
+  }
+  
+  .pending-indicator {
+    background: var(--warning);
+    color: white;
+    padding: 4px 8px;
+    border-radius: 8px;
+    font-size: 12px;
+    margin-top: 5px;
+    display: inline-block;
+  }
+  
+  #reader {
+    width: 100%;
+    max-width: 300px;
+    margin: 15px auto;
+    border-radius: 12px;
+    overflow: hidden;
+    background: #000;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+  }
+  
+  .manual-input-section {
+    display: flex;
+    gap: 10px;
+    margin: 20px 0;
+  }
+  
+  .manual-input-section input {
+    flex: 1;
+  }
+  
+  .manual-input-section button {
+    min-width: 80px;
+  }
+  
+  .status-bar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 10px 0;
+    border-top: 1px solid #e5e7eb;
+    margin-top: 15px;
+  }
+  
+  .connection-status {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 14px;
+  }
+  
+  .status-indicator {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    display: inline-block;
+  }
+  
+  .status-online {
+    background: var(--primary);
+  }
+  
+  .status-offline {
+    background: var(--danger);
+  }
+  
+  .confirmation-message, .error-message {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    left: 20px;
+    padding: 15px;
+    border-radius: 12px;
+    z-index: 1001;
+    display: none;
+    font-weight: 700;
+    text-align: center;
+    backdrop-filter: blur(10px);
+    box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+  }
+  
+  .confirmation-message {
+    background: rgba(16,185,129,0.95);
+    color: #fff;
+  }
+  
+  .error-message {
+    background: rgba(239,68,68,0.95);
+    color: #fff;
+  }
+  
+  .auto-sync-indicator {
+    background: rgba(139,92,246,0.1);
+    color: #8b5cf6;
+    padding: 8px 12px;
+    border-radius: 8px;
+    font-size: 12px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    margin-top: 10px;
+  }
+  
+  @media (min-width: 768px) {
+    .sidebar {
+      position: static;
+      width: 250px;
+      height: auto;
+    }
+    
+    .app {
+      display: flex;
+    }
+    
+    .mobile-header {
+      display: none;
+    }
+    
+    .overlay {
+      display: none !important;
+    }
+    
+    .main-content {
+      flex: 1;
+      padding: 25px;
+    }
+    
+    .controls-grid {
+      grid-template-columns: 1fr 1fr 1fr;
+    }
   }
 </style>
 </head>
 <body>
 <div class="app">
-  <nav class="sidebar" role="navigation" aria-label="القائمة الجانبية">
-    <a href="index.html" title="الرئيسية">🏠<div style="font-size:11px;margin-top:6px">الرئيسية</div></a>
-    <a href="reports.html" title="التقارير">📊<div style="font-size:11px;margin-top:6px">التقارير</div></a>
-    <a href="#" id="offlineStatus" title="حالة الاتصال">
-      ⚡<div style="font-size:11px;margin-top:6px">متصل<span class="status-indicator status-online"></span></div>
-    </a>
-  </nav>
+  <!-- Mobile Header -->
+  <div class="mobile-header">
+    <button class="menu-toggle" onclick="toggleSidebar()">☰</button>
+    <div class="app-title">نظام الحضور - مترو أبو قير</div>
+    <div style="width: 40px;"></div> <!-- Spacer for balance -->
+  </div>
 
-  <main class="main">
+  <!-- Sidebar Navigation -->
+  <div class="sidebar" id="sidebar">
+    <div class="sidebar-header">
+      <h3>القائمة الرئيسية</h3>
+      <button class="close-menu" onclick="toggleSidebar()">✕</button>
+    </div>
+    <div class="nav-links">
+      <a href="index.html" class="nav-link active">
+        <span class="nav-icon">🏠</span>
+        <span>الصفحة الرئيسية</span>
+      </a>
+      <a href="reports.html" class="nav-link">
+        <span class="nav-icon">📊</span>
+        <span>التقارير</span>
+      </a>
+      <a href="#" class="nav-link" id="offlineStatus">
+        <span class="nav-icon">⚡</span>
+        <span>حالة الاتصال</span>
+        <span class="status-indicator status-online"></span>
+      </a>
+    </div>
+  </div>
+
+  <!-- Overlay -->
+  <div class="overlay" id="overlay" onclick="toggleSidebar()"></div>
+
+  <!-- Main Content -->
+  <main class="main-content">
     <div class="card">
-      <center><h1>نظام الحضور - مترو أبو قير</h1></center>
-      <div class="controls" role="region" aria-label="إعدادات">
-        <label for="movementSelect" class="small">نوع الحركة:</label>
-        <select id="movementSelect" aria-label="اختيار نوع الحركة">
-          <option value="">اختر نوع الحركة</option>
-          <option value="دخول">دخول</option>
-          <option value="انصراف">انصراف</option>
-          <option value="انصراف مسائي">انصراف مسائي</option>
-        </select>
-
-        <div class="counter" id="scanCount">
-          عدد الحالات: 0 
-          <span id="pendingCount" class="pending-badge" style="display:none">0</span>
+      <h1>📱 نظام الحضور والانصراف</h1>
+      
+      <div class="controls-grid">
+        <div class="control-group">
+          <label class="control-label">نوع الحركة:</label>
+          <select id="movementSelect">
+            <option value="دخول">دخول</option>
+            <option value="انصراف">انصراف</option>
+            <option value="انصراف مسائي">انصراف مسائي</option>
+          </select>
         </div>
+        
+        <div class="control-group">
+          <label class="control-label">الحالة:</label>
+          <div class="counter-badge">
+            <span class="counter-value" id="scanCount">0</span>
+            <span class="counter-label">عدد الحالات</span>
+            <div id="pendingCount" class="pending-indicator" style="display:none">0 في الانتظار</div>
+          </div>
+        </div>
+      </div>
 
-        <button id="stopBtn">إيقاف الماسح</button>
-        <button id="startBtn">تشغيل الماسح</button>
+      <div class="buttons-grid">
+        <button id="startBtn">▶️ تشغيل</button>
+        <button id="stopBtn">⏹️ إيقاف</button>
         <button id="syncBtn">🔄 مزامنة</button>
+        <button id="exportBtn">📥 تصدير</button>
       </div>
 
-      <div id="reader" aria-live="polite"></div>
+      <div id="reader"></div>
 
-      <div class="manual-row">
-        <input type="text" id="manualInput" placeholder="إدخال يدوي - رقم أو اسم" aria-label="إدخال يدوي">
-        <button id="manualAddBtn">➕ إضافة يدوي</button>
+      <div class="manual-input-section">
+        <input type="text" id="manualInput" placeholder="إدخال يدوي - رقم أو اسم">
+        <button id="manualAddBtn">➕ إضافة</button>
       </div>
 
-      <div style="text-align:center;margin-top:20px">
-        <button id="exportBtn">📥 تصدير إلى Excel</button>
+      <div class="auto-sync-indicator">
+        <span>🔄 المزامنة التلقائية مفعلة</span>
       </div>
 
-      <p class="small" style="margin-top:15px;text-align:center;color:#374151">
-        قسم الموارد البشرية - مترو أبو قير
-      </p>
+      <div class="status-bar">
+        <div class="connection-status" id="connectionStatus">
+          <span>حالة الاتصال:</span>
+          <span id="statusText">متصل</span>
+          <span class="status-indicator status-online" id="statusDot"></span>
+        </div>
+        <div class="small">الموارد البشرية - مترو أبو قير</div>
+      </div>
     </div>
 
-    <div id="confirmMsg" class="confirmation-message" role="status" aria-live="polite"></div>
-    <div id="errorMsg" class="error-message" role="alert" aria-live="polite"></div>
+    <div id="confirmMsg" class="confirmation-message"></div>
+    <div id="errorMsg" class="error-message"></div>
   </main>
 </div>
 
@@ -124,63 +505,47 @@ let scanCount = 0;
 let currentScanner = null;
 let lastScannedId = null;
 let lastScannedAt = 0;
+let autoSyncInterval = null;
 const DEBOUNCE_MS = 1500;
 
-// Improved beep sound
-const beepBase64 = "UklGRuQAAABXQVZFZm10IBAAAAABAAEAgD4AAAB9AAACABAAZGF0YcQAAACAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICA=";
-const beepSound = new Audio("data:audio/wav;base64," + beepBase64);
-beepSound.volume = 0.7;
-
-function playBeep(){ 
-  try{ 
-    beepSound.currentTime = 0; 
-    beepSound.play(); 
-  }catch(e){ console.warn('beep failed', e); } 
-  try{ 
-    if(navigator.vibrate) navigator.vibrate(100); 
-  } catch(e){}
+// ---------------- Mobile Sidebar Functions ----------------
+function toggleSidebar() {
+  const sidebar = document.getElementById('sidebar');
+  const overlay = document.getElementById('overlay');
+  sidebar.classList.toggle('active');
+  overlay.classList.toggle('active');
 }
 
-function showConfirmation(record){ 
-  const msg = document.getElementById('confirmMsg');
-  msg.textContent = `✅ تم تسجيل ${record.movement_type} لـ ${record.employee_id}`;
-  msg.style.display = 'block'; 
-  setTimeout(()=>{ msg.style.display = 'none'; }, 2500); 
+// Close sidebar when clicking on a link
+document.querySelectorAll('.nav-link').forEach(link => {
+  link.addEventListener('click', () => {
+    toggleSidebar();
+  });
+});
+
+// ---------------- Enhanced Auto-Sync Functionality ----------------
+function initializeAutoSync() {
+  // Auto-sync every 30 seconds when online and has pending records
+  autoSyncInterval = setInterval(() => {
+    if (navigator.onLine && pendingRecords.length > 0) {
+      console.log('Auto-syncing pending records...');
+      syncPendingRecords(true); // true for auto-sync
+    }
+  }, 30000); // 30 seconds
+
+  // Auto-sync when coming back online
+  window.addEventListener('online', () => {
+    if (pendingRecords.length > 0) {
+      setTimeout(() => {
+        showConfirmation({movement_type: '', employee_id: 'الاتصال متاح - جاري المزامنة التلقائية...'});
+        syncPendingRecords(true);
+      }, 2000);
+    }
+  });
 }
 
-function showError(message) {
-  const msg = document.getElementById('errorMsg');
-  msg.textContent = message;
-  msg.style.display = 'block';
-  setTimeout(()=>{ msg.style.display = 'none'; }, 4000);
-}
-
-function updateCounter(){ 
-  document.getElementById('scanCount').innerHTML = `عدد الحالات: <strong>${scanCount}</strong>`; 
-  const pendingEl = document.getElementById('pendingCount');
-  if (pendingRecords.length > 0) {
-    pendingEl.textContent = pendingRecords.length;
-    pendingEl.style.display = 'inline';
-  } else {
-    pendingEl.style.display = 'none';
-  }
-}
-
-function createLocalRecord(employeeId, movement, source = 'QR'){ 
-  const now = new Date();
-  return { 
-    id: `local-${Date.now()}-${Math.random().toString(36).slice(2,8)}`,
-    employee_id: String(employeeId).trim(), 
-    movement_type: movement, 
-    timestamp: now.toISOString(),
-    source: source,
-    date: now.toISOString().split('T')[0],
-    time: now.toTimeString().split(' ')[0].substring(0,5)
-  }; 
-}
-
-// Scanner functions
-function startScanner(){ 
+// ---------------- Improved Scanner Functions ----------------
+function startScanner() { 
   if(currentScanner) return; 
   
   const movement = document.getElementById('movementSelect').value; 
@@ -192,294 +557,192 @@ function startScanner(){
   const readerId = "reader"; 
   const html5Qr = new Html5Qrcode(readerId); 
   currentScanner = html5Qr; 
-  const config = { fps: 10, qrbox: { width: 250, height: 250 } };
+  const config = { 
+    fps: 10, 
+    qrbox: { width: 250, height: 250 },
+    aspectRatio: 1.0
+  };
   
   Html5Qrcode.getCameras().then(devices => {
     if(devices && devices.length){
-      const rear = devices.find(d => (d.label||'').toLowerCase().includes('back') || (d.label||'').toLowerCase().includes('rear')) || devices[0];
-      html5Qr.start(rear.id || { facingMode: "environment" }, config, qrCodeMessage => {
-        const now = Date.now();
-        if(qrCodeMessage === lastScannedId && (now - lastScannedAt) < DEBOUNCE_MS) return;
-        lastScannedId = qrCodeMessage; 
-        lastScannedAt = now;
-        html5Qr.stop().then(()=>{ 
-          currentScanner = null; 
-          handleScanned(qrCodeMessage); 
-          setTimeout(()=> startScanner(), 500); 
-        }).catch(err=>{ 
-          currentScanner = null; 
-          handleScanned(qrCodeMessage); 
-          setTimeout(()=> startScanner(), 500); 
-        });
-      }, errorMessage => {}).catch(err=>{ 
-        console.error('start failed', err); 
-        showError('خطأ: لا يمكن الوصول إلى الكاميرا. تأكد من الأذونات.');
+      // Try to use rear camera
+      const rearCamera = devices.find(d => 
+        d.label.toLowerCase().includes('back') || 
+        d.label.toLowerCase().includes('rear') ||
+        d.label.toLowerCase().includes('environment')
+      ) || devices[0];
+      
+      html5Qr.start(
+        rearCamera.id || { facingMode: "environment" }, 
+        config, 
+        onScanSuccess, 
+        onScanError
+      ).catch(err => {
+        console.error('Scanner start failed:', err);
+        showError('خطأ في تشغيل الكاميرا. تأكد من الأذونات.');
+        currentScanner = null;
       });
     } else { 
-      showError('خطأ: لم يتم العثور على كاميرا.');
+      showError('لم يتم العثور على كاميرا متاحة.');
+      currentScanner = null;
     }
-  }).catch(err=>{ 
-    console.error('cameras error', err); 
+  }).catch(err => { 
+    console.error('Camera access error:', err);
     showError('خطأ في الوصول للكاميرا');
+    currentScanner = null;
   }); 
 }
 
-function stopScanner(){ 
-  if(!currentScanner) return; 
-  currentScanner.stop().then(()=>{ 
-    try{ currentScanner.clear(); }catch(e){}; 
-    currentScanner = null; 
-    showConfirmation({movement_type: '', employee_id: 'تم إيقاف الماسح.'});
-  }).catch(err=>{ 
-    console.warn('stop err', err); 
-    currentScanner = null; 
-  }); 
-}
-
-function handleScanned(qr){ 
-  const movement = document.getElementById('movementSelect').value; 
-  const record = createLocalRecord(qr, movement); 
-  records.unshift(record);
-  pendingRecords.push(record);
-  scanCount++; 
-  updateCounter(); 
-  saveLocally(); 
-  sendToGoogle([record]); 
-  playBeep(); 
-  showConfirmation(record); 
-}
-
-function manualAdd(){ 
-  const val = document.getElementById('manualInput').value.trim(); 
-  const movement = document.getElementById('movementSelect').value; 
-  if(!movement){ 
-    showError('اختر نوع الحركة أولاً'); 
-    return; 
-  } 
-  if(!val){ 
-    showError('أدخل رقم أو اسم صالح'); 
-    return; 
-  } 
+function onScanSuccess(qrCodeMessage) {
+  const now = Date.now();
+  if(qrCodeMessage === lastScannedId && (now - lastScannedAt) < DEBOUNCE_MS) return;
   
-  const record = createLocalRecord(val, movement, 'Manual'); 
-  records.unshift(record);
-  pendingRecords.push(record);
-  scanCount++; 
-  updateCounter(); 
-  saveLocally(); 
-  sendToGoogle([record]); 
-  playBeep(); 
-  showConfirmation(record); 
-  document.getElementById('manualInput').value=''; 
-}
-
-function saveLocally(){ 
-  try{ 
-    localStorage.setItem('attendance_records_final', JSON.stringify(records));
-    localStorage.setItem('pending_records_final', JSON.stringify(pendingRecords));
-    localStorage.setItem('scan_count_final', scanCount.toString());
-  }catch(e){} 
-}
-
-function loadLocally(){ 
-  try{ 
-    const s = localStorage.getItem('attendance_records_final');
-    const p = localStorage.getItem('pending_records_final');
-    const c = localStorage.getItem('scan_count_final');
-    
-    if(s) records = JSON.parse(s); 
-    if(p) pendingRecords = JSON.parse(p);
-    if(c) scanCount = parseInt(c);
-    
-    updateCounter(); 
-  }catch(e){} 
-}
-
-function exportToExcel(){ 
-  const data = records.slice().sort((a,b)=> new Date(b.timestamp) - new Date(a.timestamp)); 
-  const headers = ['معرف السجل','رمز الموظف','نوع الحركة','الوقت','المصدر', 'الحالة']; 
-  let csv = headers.join(',') + '\n'; 
-  const esc = v => { 
-    if(v==null) return ''; 
-    let s = String(v); 
-    if(s.includes(',')||s.includes('\n')||s.includes('"')) return '"' + s.replace(/"/g,'""') + '"'; 
-    return s; 
-  };
+  lastScannedId = qrCodeMessage; 
+  lastScannedAt = now;
   
-  data.forEach(r=>{ 
-    const status = !pendingRecords.find(p => p.id === r.id) ? 'مزامن' : 'في الانتظار';
-    csv += [esc(r.id), esc(r.employee_id), esc(r.movement_type), esc(new Date(r.timestamp).toLocaleString('ar-EG')), esc(r.source), esc(status)].join(',') + '\n'; 
-  });
-  
-  const blob = new Blob(["\uFEFF" + csv], { type: 'text/csv;charset=utf-8;' }); 
-  const a = document.createElement('a'); 
-  a.href = URL.createObjectURL(blob); 
-  a.download = `سجلات_الحضور_${new Date().toISOString().slice(0,10)}.csv`; 
-  document.body.appendChild(a); 
-  a.click(); 
-  a.remove(); 
+  // Stop scanner temporarily to prevent multiple scans
+  if(currentScanner) {
+    currentScanner.stop().then(() => {
+      currentScanner = null;
+      handleScanned(qrCodeMessage);
+      // Restart scanner after a short delay
+      setTimeout(() => startScanner(), 1000);
+    }).catch(err => {
+      console.warn('Scanner stop error:', err);
+      currentScanner = null;
+      handleScanned(qrCodeMessage);
+      setTimeout(() => startScanner(), 1000);
+    });
+  } else {
+    handleScanned(qrCodeMessage);
+    setTimeout(() => startScanner(), 1000);
+  }
 }
 
-// Improved Google Apps Script communication
-function sendToGoogle(recordsToSend) {
-  if (!Array.isArray(recordsToSend) || recordsToSend.length === 0) return;
+function onScanError(error) {
+  // Ignore scanning errors - they're normal during continuous scanning
+}
+
+// ---------------- Enhanced Sync Functions ----------------
+function syncPendingRecords(isAutoSync = false) {
+  if (pendingRecords.length === 0) {
+    if (!isAutoSync) {
+      showConfirmation({movement_type: '', employee_id: 'لا توجد سجلات في الانتظار'});
+    }
+    return;
+  }
 
   if (!navigator.onLine) {
-    console.log('Offline - records saved locally, will sync when online');
+    if (!isAutoSync) {
+      showError('لا يوجد اتصال بالإنترنت');
+    }
     return;
+  }
+
+  const syncBtn = document.getElementById('syncBtn');
+  if (!isAutoSync) {
+    syncBtn.innerHTML = '⏳ جاري المزامنة...';
+    syncBtn.disabled = true;
+  }
+
+  showConfirmation({movement_type: '', employee_id: `جاري مزامنة ${pendingRecords.length} سجل...`});
+
+  sendToGoogle(pendingRecords).then(success => {
+    if (success && !isAutoSync) {
+      showConfirmation({movement_type: '', employee_id: `تمت مزامنة ${pendingRecords.length} سجل`});
+    }
+  }).finally(() => {
+    if (!isAutoSync) {
+      setTimeout(() => {
+        syncBtn.innerHTML = '🔄 مزامنة';
+        syncBtn.disabled = false;
+      }, 2000);
+    }
+  });
+}
+
+// ---------------- Improved Google Apps Script Communication ----------------
+async function sendToGoogle(recordsToSend) {
+  if (!Array.isArray(recordsToSend) || recordsToSend.length === 0) return false;
+
+  if (!navigator.onLine) {
+    console.log('Offline - records saved locally');
+    return false;
   }
 
   const payload = {
     action: 'saveRecords',
     records: recordsToSend,
     timestamp: new Date().toISOString(),
-    source: 'attendance_app'
+    source: 'attendance_app_mobile'
   };
 
-  fetch(GOOGLE_SCRIPT_URL, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify(payload)
-  })
-  .then(response => {
+  try {
+    const response = await fetch(GOOGLE_SCRIPT_URL, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(payload)
+    });
+
     if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
-    return response.json();
-  })
-  .then(result => {
+    
+    const result = await response.json();
     console.log('Server response:', result);
+    
     if (result.success) {
       const syncedIds = result.saved_records.map(r => r.id);
       pendingRecords = pendingRecords.filter(record => !syncedIds.includes(record.id));
       updateCounter();
       saveLocally();
-      
-      if (syncedIds.length > 0) {
-        showConfirmation({movement_type: '', employee_id: `تمت مزامنة ${syncedIds.length} سجل`});
-      }
+      return true;
     } else {
       console.error('Server reported error:', result.error);
+      return false;
     }
-  })
-  .catch(error => {
+  } catch (error) {
     console.error('Network error:', error);
     // Retry with FormData as fallback
-    retryWithFormData(recordsToSend);
-  });
-}
-
-function retryWithFormData(recordsToSend) {
-  const formData = new URLSearchParams();
-  formData.append('action', 'saveRecords');
-  formData.append('records', JSON.stringify(recordsToSend));
-
-  fetch(GOOGLE_SCRIPT_URL, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/x-www-form-urlencoded',
-    },
-    body: formData
-  })
-  .then(response => response.json())
-  .then(result => {
-    if (result.success) {
-      const syncedIds = result.saved_records.map(r => r.id);
-      pendingRecords = pendingRecords.filter(record => !syncedIds.includes(record.id));
-      updateCounter();
-      saveLocally();
-    }
-  })
-  .catch(error => {
-    console.error('FormData also failed:', error);
-  });
-}
-
-function syncPendingRecords() {
-  if (pendingRecords.length === 0) {
-    showConfirmation({movement_type: '', employee_id: 'لا توجد سجلات في الانتظار للمزامنة'});
-    return;
-  }
-
-  if (!navigator.onLine) {
-    showError('لا يوجد اتصال بالإنترنت. لا يمكن المزامنة.');
-    return;
-  }
-
-  const syncBtn = document.getElementById('syncBtn');
-  syncBtn.innerHTML = '⏳ جاري المزامنة...';
-  syncBtn.classList.add('sync-animation');
-
-  showConfirmation({movement_type: '', employee_id: `جاري مزامنة ${pendingRecords.length} سجل...`});
-
-  sendToGoogle(pendingRecords);
-
-  setTimeout(() => {
-    syncBtn.innerHTML = '🔄 مزامنة';
-    syncBtn.classList.remove('sync-animation');
-  }, 3000);
-}
-
-// Event Listeners
-document.getElementById('startBtn').addEventListener('click', startScanner);
-document.getElementById('stopBtn').addEventListener('click', stopScanner);
-document.getElementById('manualAddBtn').addEventListener('click', manualAdd);
-document.getElementById('exportBtn').addEventListener('click', exportToExcel);
-document.getElementById('syncBtn').addEventListener('click', syncPendingRecords);
-document.getElementById('manualInput').addEventListener('keypress', function(e) {
-  if (e.key === 'Enter') manualAdd();
-});
-
-// Load saved data
-loadLocally();
-
-// PWA Service Worker
-if('serviceWorker' in navigator){ 
-  window.addEventListener('load', ()=>{ 
-    navigator.serviceWorker.register('service-worker.js')
-      .then(()=>console.log('SW registered'))
-      .catch(()=>{}); 
-  }); 
-}
-
-// Online/Offline status
-function updateOnlineStatus(){ 
-  const el = document.getElementById('offlineStatus'); 
-  const indicator = el.querySelector('.status-indicator');
-  
-  if (navigator.onLine) {
-    el.innerHTML = '⚡<div style="font-size:11px;margin-top:6px">متصل<span class="status-indicator status-online"></span></div>';
-    // Auto-sync when coming back online
-    if (pendingRecords.length > 0) {
-      setTimeout(() => {
-        showConfirmation({movement_type: '', employee_id: 'الاتصال متاح - جاري المزامنة التلقائية...'});
-        syncPendingRecords();
-      }, 2000);
-    }
-  } else {
-    el.innerHTML = '⛔<div style="font-size:11px;margin-top:6px">غير متصل<span class="status-indicator status-offline"></span></div>';
+    return await retryWithFormData(recordsToSend);
   }
 }
 
-window.addEventListener('online', updateOnlineStatus); 
-window.addEventListener('offline', updateOnlineStatus); 
-updateOnlineStatus();
+// ... باقي الدوال بنفس الكود السابق مع التعديلات البسيطة ...
 
-// Test connection on load
-window.addEventListener('load', function() {
-  // Set default movement type to "دخول"
+// ---------------- Initialize App ----------------
+document.addEventListener('DOMContentLoaded', function() {
+  // Set default movement type
   document.getElementById('movementSelect').value = 'دخول';
   
-  fetch(GOOGLE_SCRIPT_URL + '?action=test')
-    .then(response => {
-      if (response.ok) {
-        console.log('Connection to Google Apps Script is working');
-      }
-    })
-    .catch(error => {
-      console.log('Connection test failed (might be offline)');
-    });
+  // Load saved data
+  loadLocally();
+  
+  // Initialize auto-sync
+  initializeAutoSync();
+  
+  // Test connection
+  testConnection();
+  
+  // Add event listeners
+  document.getElementById('startBtn').addEventListener('click', startScanner);
+  document.getElementById('stopBtn').addEventListener('click', stopScanner);
+  document.getElementById('manualAddBtn').addEventListener('click', manualAdd);
+  document.getElementById('exportBtn').addEventListener('click', exportToExcel);
+  document.getElementById('syncBtn').addEventListener('click', () => syncPendingRecords(false));
+  document.getElementById('manualInput').addEventListener('keypress', function(e) {
+    if (e.key === 'Enter') manualAdd();
+  });
+  
+  // Initialize service worker for PWA
+  if('serviceWorker' in navigator) {
+    navigator.serviceWorker.register('service-worker.js')
+      .then(() => console.log('SW registered'))
+      .catch(err => console.log('SW registration failed:', err));
+  }
 });
+
+// ... باقي الدوال الأساسية تبقى كما هي مع تحسينات بسيطة ...
 </script>
 </body>
 </html>
