@@ -1,651 +1,494 @@
+
 <!DOCTYPE html>
-<html lang="ar">
+<html lang="ar" dir="rtl">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>تقارير الحضور والانصراف - مترو أبو قير</title>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Attendance Tracker</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/html5-qrcode" type="text/javascript"></script>
+    <meta name="theme-color" content="#10b981"/>
     <style>
-        :root {
-            --primary: #10b981;
-            --secondary: #3b82f6;
-            --danger: #ef4444;
-            --warning: #f59e0b;
-            --dark: #06212a;
-        }
-        
-        body {font-family: "Cairo", sans-serif; margin: 0; padding: 20px; direction: rtl; text-align: right; background: #f8fafc;}
-        .container {max-width: 1400px; margin: 0 auto;}
-        
-        .header {background: linear(135deg, var(--dark), #083344); color: white; padding: 25px; border-radius: 16px; margin-bottom: 25px; text-align: center; box-shadow: 0 8px 32px rgba(0,0,0,0.1);}
-        .header h2 {margin: 0; font-size: 28px; font-weight: 700;}
-        .header p {margin: 8px 0 0; opacity: 0.9; font-size: 16px;}
-        
-        .form-section {background: white; padding: 25px; border-radius: 16px; margin-bottom: 25px; box-shadow: 0 4px 20px rgba(0,0,0,0.08); border: 1px solid #e5e7eb;}
-        .form-section h3 {margin-top: 0; color: var(--dark); border-bottom: 2px solid var(--primary); padding-bottom: 12px; font-size: 20px;}
-        
-        select, input, button {
-            padding: 12px 16px; margin: 8px; border: 1px solid #d1d5db; border-radius: 10px;
-            font-size: 15px; font-family: "Cairo"; transition: all 0.2s;
-        }
-        
-        select, input {background: white; width: 200px; border: 1px solid #d1d5db;}
-        select:focus, input:focus {outline: none; border-color: var(--primary); box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.1);}
-        
-        button {background: var(--primary); color: white; border: none; cursor: pointer; font-weight: 600; min-width: 140px;}
-        button:hover {transform: translateY(-2px); box-shadow: 0 4px 12px rgba(0,0,0,0.15);}
-        button.secondary {background: var(--secondary);}
-        button.warning {background: var(--warning);}
-        
-        .hidden {display: none;}
-        .message {padding: 15px; border-radius: 10px; margin: 15px 0; font-weight: 600; text-align: center;}
-        .error {background: #fee2e2; color: var(--danger); border: 1px solid #fecaca;}
-        .success {background: #d1fae5; color: #065f46; border: 1px solid #a7f3d0;}
-        .loading {background: #dbeafe; color: var(--secondary);}
-        
-        .employee-info {background: #e0f2fe; padding: 18px; border-radius: 12px; margin: 15px 0; border-right: 4px solid var(--secondary);}
-        
-        .summary-section {background: linear(135deg, #f0f9ff, #e0f2fe); padding: 25px; border-radius: 16px; margin: 25px 0; border: 1px solid #bae6fd;}
-        .summary-grid {display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 20px; margin-top: 15px;}
-        .summary-item {background: white; padding: 20px; border-radius: 12px; text-align: center; box-shadow: 0 4px 12px rgba(0,0,0,0.08); border-top: 4px solid var(--primary);}
-        .summary-label {font-size: 14px; color: #6b7280; margin-bottom: 8px;}
-        .summary-value {font-size: 24px; font-weight: 800; color: var(--dark);}
-        .overtime {color: var(--danger);}
-        
-        table {width: 100%; border-collapse: collapse; margin-top: 20px; background: white; border-radius: 12px; overflow: hidden; box-shadow: 0 4px 20px rgba(0,0,0,0.08);}
-        th, td {border: 1px solid #e5e7eb; padding: 14px; text-align: center;}
-        th {background: var(--dark); color: white; font-weight: 600; font-size: 15px;}
-        tr:nth-child(even) {background: #f8fafc;}
-        tr:hover {background: #f0f9ff;}
-        
-        .movements-list {font-size: 12px; color: #6b7280; margin-top: 5px; line-height: 1.6;}
-        .report-actions {margin: 25px 0; text-align: center;}
-        
-        .nav-buttons {display: flex; gap: 15px; justify-content: center; margin-bottom: 25px;}
-        .nav-btn {padding: 12px 25px; border-radius: 10px; text-decoration: none; color: white; font-weight: 600; transition: all 0.2s;}
-        .nav-btn.primary {background: var(--primary);}
-        .nav-btn.secondary {background: var(--secondary);}
-        .nav-btn:hover {transform: translateY(-2px); box-shadow: 0 4px 12px rgba(0,0,0,0.15);}
-        
-        @media (max-width: 768px) {
-            .container {padding: 10px;}
-            .summary-grid {grid-template-columns: 1fr;}
-            select, input {width: 100%; margin: 5px 0;}
-            button {width: 100%; margin: 5px 0;}
-            .nav-buttons {flex-direction: column;}
-        }
+      body {
+        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+      }
+      @keyframes fadeInDown {
+        from { opacity: 0; transform: translate(-50%, -20px); }
+        to { opacity: 1; transform: translate(-50%, 0); }
+      }
+      .animate-fade-in-down { animation: fadeInDown 0.3s ease-out forwards; }
+      input[type=number]::-webkit-inner-spin-button,
+      input[type=number]::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
+      input[type=number] { -moz-appearance: textfield; }
+      @keyframes pulse-yellow {
+        0%, 100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(250, 204, 21, 0.7); }
+        50% { transform: scale(1.05); box-shadow: 0 0 0 7px rgba(250, 204, 21, 0); }
+      }
+      .animate-pulse-yellow { animation: pulse-yellow 1.5s infinite; }
     </style>
 </head>
-<body>
-    <div class="container">
-        <div class="header">
-            <h2>📊 نظام تقارير الحضور والانصراف</h2>
-            <p>مترو أبو قير - قسم الموارد البشرية</p>
-        </div>
+<body class="bg-gray-100 transition-colors duration-500 ease-in-out">
 
-        <div class="nav-buttons">
-            <a href="index.html" class="nav-btn primary">🏠 الصفحة الرئيسية</a>
-            <a href="reports.html" class="nav-btn secondary">📊 صفحة التقارير</a>
-        </div>
+    <div id="app-container" class="min-h-screen flex items-start justify-center p-4 pt-8 sm:p-6">
+        <div class="w-full max-w-3xl mx-auto bg-white p-5 sm:p-6 rounded-2xl shadow-lg transition-colors duration-500 ease-in-out">
+            <header class="text-center mb-6">
+                <h1 class="text-2xl sm:text-3xl font-bold text-gray-800">Abo Qir Metro JV Orascom</h1>
+                <p class="text-sm text-gray-500 mt-1">HR Department Attendance Tracker</p>
+            </header>
 
-        <!-- اختيار نوع التقرير -->
-        <div class="form-section">
-            <label for="reportType"><strong>اختر نوع التقرير:</strong></label>
-            <select id="reportType" onchange="toggleReportForm()">
-                <option value="employee">تقرير موظف فردي</option>
-                <option value="day">تقرير يوم معين</option>
-                <option value="period">تقرير فترة مجمع</option>
-            </select>
-        </div>
+            <main>
+                <div class="bg-gray-50 p-4 rounded-lg flex flex-col sm:flex-row items-center justify-center gap-4 flex-wrap mb-4 border border-gray-200">
+                    <div class="flex items-center gap-2">
+                        <label for="movementSelect" class="text-sm font-medium text-gray-700 whitespace-nowrap">نوع الحركة:</label>
+                        <select id="movementSelect" class="block w-40 px-3 py-2 border-2 rounded-md shadow-sm focus:outline-none focus:ring-2 sm:text-sm transition-all duration-300">
+                            <option value="">اختر نوع الحركة</option>
+                            <option value="دخول">دخول</option>
+                            <option value="انصراف">انصراف</option>
+                            <option value="انصراف مسائي">مسائي</option>
+                        </select>
+                    </div>
+                    <div id="scanCount" class="font-bold text-blue-800 bg-blue-100 px-3 py-2 rounded-md">
+                        سجلات لم ترسل: 0
+                    </div>
+                    <div class="flex gap-2">
+                         <button id="startBtn" class="flex items-center justify-center gap-2 px-4 py-2 font-semibold text-white bg-emerald-500 rounded-md shadow-sm hover:bg-emerald-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-emerald-500 disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-5 h-5"><rect width="5" height="5" x="3" y="3" rx="1" /><rect width="5" height="5" x="16" y="3" rx="1" /><rect width="5" height="5" x="3" y="16" rx="1" /><path d="M21 16h-3a2 2 0 0 0-2 2v3" /><path d="M21 21v.01" /><path d="M12 7v3a2 2 0 0 1-2 2H7" /><path d="M3 12h.01" /><path d="M12 3h.01" /><path d="M12 16.01V12" /><path d="M16 12h.01" /><path d="M21 12h.01" /><path d="M12 21h.01" /></svg>
+                            <span>Scan QR</span>
+                        </button>
+                        <button id="stopBtn" class="flex items-center justify-center gap-2 px-4 py-2 font-semibold text-white bg-red-500 rounded-md shadow-sm hover:bg-red-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors">
+                           <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-5 h-5"><circle cx="12" cy="12" r="10" /><rect width="6" height="6" x="9" y="9" /></svg>
+                            <span>Stop</span>
+                        </button>
+                         <button id="flashBtn" class="flex items-center justify-center p-2.5 font-semibold text-white bg-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-offset-2 transition-all duration-300 disabled:bg-gray-400 disabled:cursor-not-allowed" disabled>
+                            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-5 h-5">
+                                <path id="flashPath" d="M13 2 3 14h9l-1 8 10-12h-9l1-8z"></path>
+                            </svg>
+                            <span class="sr-only">Toggle Flash</span>
+                        </button>
+                        <button id="volumeBtn" class="flex items-center justify-center p-2.5 font-semibold text-white bg-gray-600 rounded-md shadow-sm hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500 transition-colors">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-5 h-5">
+                                <polygon id="volumeOnPath" points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon><path id="volumeOffPath" d="M11 5 6 9H2v6h4l5 4V5zM23 9l-6 6M17 9l6 6" style="display: none;"></path>
+                            </svg>
+                            <span class="sr-only">Toggle Sound</span>
+                        </button>
+                    </div>
+                </div>
+                
+                <div id="reader" class="w-full max-w-md mx-auto rounded-lg overflow-hidden bg-black border-4 border-gray-300 transition-all duration-300"></div>
 
-        <!-- نموذج تقرير موظف -->
-        <div id="employeeReportForm" class="form-section">
-            <h3>🎯 تقرير موظف فردي</h3>
-            <div style="display: flex; flex-wrap: wrap; gap: 15px; align-items: end;">
-                <div>
-                    <label><strong>كود الموظف:</strong></label><br>
-                    <input type="text" id="employeeId" placeholder="ادخل كود الموظف">
+                <div class="manual-entry mt-6 pt-6 border-t">
+                    <div class="flex flex-col sm:flex-row items-center justify-center gap-2">
+                       <input id="manualInput" type="text" inputmode="numeric" pattern="[0-9]*" maxlength="14" placeholder="إدخال يدوي - 14 رقم بحد أقصى" class="w-full sm:w-64 px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500" />
+                        <button id="manualAddBtn" class="w-full sm:w-auto flex items-center justify-center gap-2 px-4 py-2 font-semibold text-white bg-blue-500 rounded-md shadow-sm hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-5 h-5"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="16"></line><line x1="8" y1="12" x2="16" y2="12"></line></svg>
+                            <span>إضافة يدوي</span>
+                        </button>
+                    </div>
                 </div>
-                <div>
-                    <label><strong>من:</strong></label><br>
-                    <input type="date" id="fromDate">
+
+                <div class="text-center mt-8">
+                     <button id="sendBtn" class="inline-flex items-center justify-center gap-2 px-5 py-2.5 font-semibold text-white bg-green-500 rounded-md shadow-sm hover:bg-green-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 transition-colors disabled:bg-gray-400 disabled:cursor-not-allowed">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-5 h-5"><line x1="22" y1="2" x2="11" y2="13"></line><polygon points="22 2 15 22 11 13 2 9 22 2"></polygon></svg>
+                        <span id="sendBtnText">Send Data (0)</span>
+                    </button>
                 </div>
-                <div>
-                    <label><strong>إلى:</strong></label><br>
-                    <input type="date" id="toDate">
-                </div>
-                <div>
-                    <button onclick="fetchEmployeeReport()">عرض التقرير</button>
-                </div>
+            </main>
+        </div>
+    </div>
+    
+    <div id="message" class="fixed top-5 left-1/2 -translate-x-1/2 px-6 py-3 rounded-lg shadow-xl text-white font-bold text-center z-50" style="display: none;"></div>
+    
+    <div id="sendingModal" class="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center z-50 p-4" style="display: none;" dir="ltr">
+        <div class="bg-white rounded-lg shadow-2xl p-6 w-full max-w-sm text-center">
+            <h3 class="text-xl font-bold text-gray-800 mb-4">Sending Data to Google</h3>
+            <p id="modalMessage" class="text-gray-600 mb-2">Preparing to send...</p>
+            <div class="w-full bg-gray-200 rounded-full h-4 mb-4 overflow-hidden">
+                <div id="modalProgress" class="bg-blue-500 h-4 rounded-full transition-all duration-300 ease-linear" style="width: 0%"></div>
             </div>
-            
-            <div id="employeeInfo" class="employee-info hidden"></div>
-        </div>
-
-        <!-- نموذج تقرير يوم معين -->
-        <div id="dayReportForm" class="form-section hidden">
-            <h3>📅 تقرير يوم معين</h3>
-            <div style="display: flex; flex-wrap: wrap; gap: 15px; align-items: end;">
-                <div>
-                    <label><strong>التاريخ:</strong></label><br>
-                    <input type="date" id="singleDay">
-                </div>
-                <div>
-                    <button onclick="fetchDayReport()" class="secondary">عرض تقرير اليوم</button>
-                </div>
-            </div>
-        </div>
-
-        <!-- نموذج تقرير فترة (مجمع) -->
-        <div id="periodReportForm" class="form-section hidden">
-            <h3>📊 تقرير فترة مجمع</h3>
-            <div style="display: flex; flex-wrap: wrap; gap: 15px; align-items: end;">
-                <div>
-                    <label><strong>من:</strong></label><br>
-                    <input type="date" id="periodFrom">
-                </div>
-                <div>
-                    <label><strong>إلى:</strong></label><br>
-                    <input type="date" id="periodTo">
-                </div>
-                <div>
-                    <button onclick="fetchPeriodReport()" class="warning">عرض التقرير المجمع</button>
-                </div>
-            </div>
-        </div>
-
-        <div id="message" class="message hidden"></div>
-        <div id="loading" class="message loading hidden">⏳ جاري تحميل البيانات...</div>
-
-        <!-- قسم الملخص -->
-        <div id="summarySection" class="summary-section hidden">
-            <h3>📈 ملخص التقرير</h3>
-            <div id="summaryContent" class="summary-grid"></div>
-        </div>
-
-        <!-- أزرار التحكم في التقرير -->
-        <div id="reportActions" class="report-actions hidden">
-            <button onclick="exportToExcel()" class="secondary">📥 تصدير إلى Excel</button>
-            <button onclick="printReport()" class="warning">🖨️ طباعة التقرير</button>
-        </div>
-
-        <!-- جدول عرض النتائج -->
-        <div id="resultsSection" class="hidden">
-            <h3>📋 نتائج التقرير</h3>
-            <div style="overflow-x: auto;">
-                <table id="resultsTable">
-                    <thead id="tableHead"></thead>
-                    <tbody id="tableBody"></tbody>
-                </table>
-            </div>
+            <p id="modalCounter" class="text-sm font-semibold text-blue-700">0 / 0</p>
         </div>
     </div>
 
-    <script>
-        const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwI5FJhyk4DKPgAQyakCinzvPoUlsMPnOxsdmI4R6x6KmR1tjpuEYkPWJzEBgq-lADaNw/exec";
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+    // --- Constants ---
+    const GOOGLE_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxIpQCojkdP9db5fe0-4mG3fEYwB5jr5OSqkcqxn9uwSME3HKPyWSFexk24oO9LWG5K/exec';
+    const LOCAL_STORAGE_KEY_RECORDS = 'attendance_records_local_v2';
+    const VOLUME_STORAGE_KEY = 'attendance_app_isMuted';
+    const DEVICE_ID_KEY = 'attendance_app_device_id_v2';
+    const DEBOUNCE_MS = 2000;
+    const READER_ID = "reader";
+    const BEEP_BASE64 = 'UklGRl9vT19XQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YV8vT19AAAAA//8CAP//AgD//gIA//4CAP//BQD//wUA//8HAP//BwD//wMA//8CAP//AwD//wEAAAAA';
+    const SEND_CHUNK_SIZE = 50;
 
-        function toggleReportForm() {
-            const type = document.getElementById("reportType").value;
-            document.getElementById("employeeReportForm").classList.toggle("hidden", type !== "employee");
-            document.getElementById("dayReportForm").classList.toggle("hidden", type !== "day");
-            document.getElementById("periodReportForm").classList.toggle("hidden", type !== "period");
-            document.getElementById("message").innerHTML = "";
-            document.getElementById("message").classList.add("hidden");
-            document.getElementById("resultsSection").classList.add("hidden");
-            document.getElementById("reportActions").classList.add("hidden");
-            document.getElementById("summarySection").classList.add("hidden");
-            document.getElementById("employeeInfo").classList.add("hidden");
+    // --- State ---
+    let records = [];
+    let html5QrCode = null;
+    let isScanning = false;
+    let isFlashOn = false;
+    let canUseFlash = false;
+    let isMuted = false;
+    let lastScannedId = null;
+    let lastScannedAt = 0;
+    let beepSound = null;
+    let deviceId = '';
+    let isSending = false;
+
+    // --- DOM Elements ---
+    const movementSelect = document.getElementById('movementSelect');
+    const scanCountEl = document.getElementById('scanCount');
+    const startBtn = document.getElementById('startBtn');
+    const stopBtn = document.getElementById('stopBtn');
+    const flashBtn = document.getElementById('flashBtn');
+    const flashPath = document.getElementById('flashPath');
+    const volumeBtn = document.getElementById('volumeBtn');
+    const volumeOnPath = document.getElementById('volumeOnPath');
+    const volumeOffPath = document.getElementById('volumeOffPath');
+    const readerEl = document.getElementById('reader');
+    const manualInput = document.getElementById('manualInput');
+    const manualAddBtn = document.getElementById('manualAddBtn');
+    const sendBtn = document.getElementById('sendBtn');
+    const sendBtnText = document.getElementById('sendBtnText');
+    const messageEl = document.getElementById('message');
+    const sendingModal = document.getElementById('sendingModal');
+    const modalMessage = document.getElementById('modalMessage');
+    const modalProgress = document.getElementById('modalProgress');
+    const modalCounter = document.getElementById('modalCounter');
+
+    // --- THEME/COLOR Functions ---
+    function updateThemeColor() {
+        const value = movementSelect.value;
+        const bodyColorClasses = {
+            '': 'bg-gray-100', 'دخول': 'bg-emerald-50', 'انصراف': 'bg-blue-50', 'انصراف مسائي': 'bg-red-50'
+        };
+        const selectColorClasses = {
+            '': ['bg-white', 'text-gray-800', 'border-gray-400', 'focus:ring-emerald-500'],
+            'دخول': ['bg-emerald-500', 'text-white', 'font-semibold', 'border-emerald-600', 'focus:ring-emerald-400'],
+            'انصراف': ['bg-blue-500', 'text-white', 'font-semibold', 'border-blue-600', 'focus:ring-blue-400'],
+            'انصراف مسائي': ['bg-red-500', 'text-white', 'font-semibold', 'border-red-600', 'focus:ring-red-400']
+        };
+        document.body.className = `transition-colors duration-500 ease-in-out ${bodyColorClasses[value] || 'bg-gray-100'}`;
+        const allSelectClasses = Object.values(selectColorClasses).flat();
+        movementSelect.classList.remove(...new Set(allSelectClasses));
+        movementSelect.classList.add(...(selectColorClasses[value] || selectColorClasses['']));
+    }
+
+    // --- UI Functions ---
+    function updateUIState() {
+        startBtn.disabled = isScanning;
+        stopBtn.disabled = !isScanning;
+        flashBtn.disabled = !isScanning || !canUseFlash;
+        sendBtn.disabled = records.length === 0 || isSending;
+
+        if (isScanning) {
+            readerEl.style.minHeight = '250px';
+            readerEl.classList.add('border-emerald-500');
+            readerEl.classList.remove('border-gray-300');
+        } else {
+            readerEl.style.minHeight = '0px';
+            readerEl.innerHTML = '';
+            readerEl.classList.remove('border-emerald-500');
+            readerEl.classList.add('border-gray-300');
+            isFlashOn = false;
+            canUseFlash = false;
+            updateFlashUI();
+            flashBtn.disabled = true;
         }
+        scanCountEl.textContent = `سجلات لم ترسل: ${records.length}`;
+        sendBtnText.textContent = `Send Data (${records.length})`;
+    }
 
-        function showLoading(show) {
-            document.getElementById("loading").classList.toggle("hidden", !show);
+    function updateFlashUI() {
+        const activeClasses = ['bg-yellow-400', 'hover:bg-yellow-500', 'text-black', 'ring-2', 'ring-yellow-300', 'ring-offset-1', 'animate-pulse-yellow'];
+        const inactiveClasses = ['bg-gray-600', 'hover:bg-gray-700', 'text-white'];
+        if (isFlashOn) {
+            flashBtn.classList.remove(...inactiveClasses);
+            flashBtn.classList.add(...activeClasses);
+            flashPath.setAttribute('fill', 'currentColor');
+        } else {
+            flashBtn.classList.remove(...activeClasses);
+            flashBtn.classList.add(...inactiveClasses);
+            flashPath.setAttribute('fill', 'none');
         }
+    }
 
-        function showMessage(message, isError = true) {
-            const messageEl = document.getElementById("message");
-            messageEl.innerHTML = message;
-            messageEl.className = isError ? 'message error' : 'message success';
-            messageEl.classList.remove("hidden");
+    function updateVolumeUI() {
+        if (isMuted) {
+            volumeBtn.classList.remove('bg-gray-600', 'hover:bg-gray-700');
+            volumeBtn.classList.add('bg-red-500', 'hover:bg-red-600');
+            volumeOnPath.style.display = 'none';
+            volumeOffPath.style.display = 'block';
+        } else {
+            volumeBtn.classList.add('bg-gray-600', 'hover:bg-gray-700');
+            volumeBtn.classList.remove('bg-red-500', 'hover:bg-red-600');
+            volumeOnPath.style.display = 'block';
+            volumeOffPath.style.display = 'none';
         }
+    }
 
-        function showEmployeeInfo(employee) {
-            const infoEl = document.getElementById("employeeInfo");
-            infoEl.innerHTML = `
-                <strong>📋 بيانات الموظف:</strong><br>
-                <strong>الكود:</strong> ${employee.employee_id} | 
-                <strong>الاسم:</strong> ${employee.name} | 
-                <strong>المهنة:</strong> ${employee.occupation}
-            `;
-            infoEl.classList.remove("hidden");
+    let messageTimer;
+    function showMessage(text, type = 'info') {
+        clearTimeout(messageTimer);
+        messageEl.textContent = text;
+        messageEl.className = `fixed top-5 left-1/2 -translate-x-1/2 px-6 py-3 rounded-lg shadow-xl text-white font-bold text-center z-50 animate-fade-in-down`;
+        if (type === 'success') messageEl.classList.add('bg-emerald-500');
+        else if (type === 'error') messageEl.classList.add('bg-red-500');
+        else messageEl.classList.add('bg-blue-500');
+        
+        messageEl.style.display = 'block';
+        messageTimer = setTimeout(() => { messageEl.style.display = 'none'; }, 2500);
+    }
+
+    // --- Core Functions ---
+    function playBeepAndVibrate() {
+        if (!isMuted && beepSound) {
+            beepSound.currentTime = 0;
+            beepSound.play().catch(e => console.warn('Audio playback failed:', e));
         }
+        if (navigator.vibrate) { navigator.vibrate(180); }
+    }
 
-        // ✅ جلب تقرير موظف
-        async function fetchEmployeeReport() {
-            const emp = document.getElementById("employeeId").value.trim();
-            const from = document.getElementById("fromDate").value;
-            const to = document.getElementById("toDate").value;
-
-            if (!emp || !from || !to) {
-                showMessage("⚠ يرجى ملء جميع الحقول.");
-                return;
-            }
-
-            showLoading(true);
-            showMessage("");
-            document.getElementById("employeeInfo").classList.add("hidden");
-            document.getElementById("summarySection").classList.add("hidden");
-
-            try {
-                const url = `${SCRIPT_URL}?action=singleReport&employee_id=${emp}&from=${from}&to=${to}`;
-                const res = await fetch(url);
-                const data = await res.json();
-
-                if (data.error) {
-                    showMessage("⚠ " + data.error);
-                    document.getElementById("resultsSection").classList.add("hidden");
-                    document.getElementById("reportActions").classList.add("hidden");
-                    return;
-                }
-
-                if (!data.days || data.days.length === 0) {
-                    showMessage("⚠ لا توجد بيانات مطابقة للفترة المحددة.");
-                    document.getElementById("resultsSection").classList.add("hidden");
-                    document.getElementById("reportActions").classList.add("hidden");
-                    return;
-                }
-
-                showMessage(`✅ تم العثور على ${data.days.length} يوم`, false);
-                showEmployeeInfo(data.days[0]);
-                
-                // عرض الملخص
-                showSummary(data.summary, 'employee');
-                
-                renderEmployeeTable(data.days);
-                
-                document.getElementById("reportActions").classList.remove("hidden");
-            } catch (error) {
-                showMessage("⚠ حدث خطأ في جلب البيانات: " + error.message);
-            } finally {
-                showLoading(false);
-            }
+    function addRecord(employeeId, source) {
+        const movement = movementSelect.value;
+        if (!movement) {
+            showMessage('الرجاء اختيار نوع الحركة أولاً.', 'error');
+            return false;
         }
+        const now = new Date();
+        const newRecord = {
+            id: `local-${now.getTime()}-${Math.random().toString(36).slice(2, 8)}`,
+            employeeId: String(employeeId).trim(),
+            movement: movement,
+            timestamp: now.toISOString(),
+            date: now.toLocaleDateString('ar-EG'),
+            time: now.toLocaleTimeString('ar-EG', { hour: '2-digit', minute: '2-digit', second: '2-digit' }),
+            source: source,
+        };
+        records.unshift(newRecord);
+        saveToLocal();
+        playBeepAndVibrate();
+        showMessage(`✅ تم تسجيل ${newRecord.movement} لـ ${newRecord.employeeId}`, 'success');
+        updateUIState();
+        return true;
+    }
 
-        // ✅ جلب تقرير يومي
-        async function fetchDayReport() {
-            const day = document.getElementById("singleDay").value;
-            if (!day) {
-                showMessage("⚠ يرجى اختيار تاريخ.");
-                return;
-            }
-
-            showLoading(true);
-            showMessage("");
-            document.getElementById("summarySection").classList.add("hidden");
-
-            try {
-                const url = `${SCRIPT_URL}?action=dayReport&day=${day}`;
-                const res = await fetch(url);
-                const data = await res.json();
-
-                if (data.error) {
-                    showMessage("⚠ " + data.error);
-                    return;
-                }
-
-                if (!data.employees || data.employees.length === 0) {
-                    showMessage("⚠ لا توجد بيانات لهذا اليوم.");
-                    return;
-                }
-
-                showMessage(`✅ تم العثور على ${data.employees.length} موظف`, false);
+    async function handleSendToGoogle() {
+        if (records.length === 0 || isSending) return;
+        
+        isSending = true;
+        updateUIState();
+        sendingModal.style.display = 'flex';
+        
+        const totalToSend = records.length;
+        modalCounter.textContent = `0 / ${totalToSend}`;
+        modalProgress.style.width = '0%';
+        modalMessage.textContent = 'Preparing to send...';
+        
+        const recordsToSend = [...records].reverse(); // Send oldest records first
+        let sentCount = 0;
+        
+        try {
+            for (let i = 0; i < recordsToSend.length; i += SEND_CHUNK_SIZE) {
+                const chunk = recordsToSend.slice(i, i + SEND_CHUNK_SIZE);
+                modalMessage.textContent = `Sending ${sentCount + 1} to ${Math.min(sentCount + chunk.length, totalToSend)}...`;
                 
-                // عرض ملخص اليوم
-                showSummary(data.summary, 'day');
-                
-                renderDayTable(data.employees);
-                
-                document.getElementById("reportActions").classList.remove("hidden");
-            } catch (error) {
-                showMessage("⚠ حدث خطأ في جلب البيانات: " + error.message);
-            } finally {
-                showLoading(false);
-            }
-        }
-
-        // ✅ جلب تقرير مجمع
-        async function fetchPeriodReport() {
-            const from = document.getElementById("periodFrom").value;
-            const to = document.getElementById("periodTo").value;
-            if (!from || !to) {
-                showMessage("⚠ يرجى تحديد الفترة.");
-                return;
-            }
-
-            showLoading(true);
-            showMessage("");
-            document.getElementById("summarySection").classList.add("hidden");
-
-            try {
-                const url = `${SCRIPT_URL}?action=periodReport&from=${from}&to=${to}`;
-                const res = await fetch(url);
-                const data = await res.json();
-
-                if (data.error) {
-                    showMessage("⚠ " + data.error);
-                    return;
-                }
-
-                if (!data || Object.keys(data).length === 0) {
-                    showMessage("⚠ لا توجد بيانات فى هذه الفترة.");
-                    return;
-                }
-
-                // تحويل الكائن إلى مصفوفة
-                const employeesArray = Object.keys(data).map(empId => {
-                    const empData = data[empId];
+                const params = new URLSearchParams();
+                const batchPayload = chunk.map(record => {
+                    const recordDate = new Date(record.timestamp);
+                    const timeFormatted = recordDate.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' });
                     return {
-                        employee_id: empId,
-                        name: empData.name,
-                        occupation: empData.occupation,
-                        days_present: empData.days_present || 0,
-                        total_work_hours_str: empData.total_work_hours_str || "0:00",
-                        total_overtime_hours_str: empData.total_overtime_hours_str || "0:00",
-                        average_daily_hours: empData.average_daily_hours || "0:00"
+                        device_id: deviceId,
+                        employee_id: record.employeeId,
+                        movement_type: record.movement,
+                        time: timeFormatted,
+                        source: record.source
                     };
                 });
+                params.append('records_batch', JSON.stringify(batchPayload));
+                
+                await fetch(GOOGLE_SCRIPT_URL, {
+                    method: 'POST',
+                    mode: 'no-cors',
+                    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                    body: params.toString()
+                });
 
-                showMessage(`✅ تم العثور على ${employeesArray.length} موظف`, false);
-                
-                // حساب الإجماليات
-                const summary = calculatePeriodSummary(employeesArray);
-                showSummary(summary, 'period');
-                
-                renderPeriodTable(employeesArray);
-                
-                document.getElementById("reportActions").classList.remove("hidden");
-            } catch (error) {
-                showMessage("⚠ حدث خطأ في جلب البيانات: " + error.message);
-            } finally {
-                showLoading(false);
-            }
-        }
-
-        // ✅ عرض الملخص
-        function showSummary(summary, type) {
-            const summarySection = document.getElementById("summarySection");
-            const summaryContent = document.getElementById("summaryContent");
-            
-            let html = '';
-            
-            if (type === 'employee') {
-                html = `
-                    <div class="summary-item">
-                        <div class="summary-label">إجمالي الأيام</div>
-                        <div class="summary-value">${summary.total_days} يوم</div>
-                    </div>
-                    <div class="summary-item">
-                        <div class="summary-label">إجمالي ساعات العمل</div>
-                        <div class="summary-value">${summary.total_work_hours}</div>
-                    </div>
-                    <div class="summary-item">
-                        <div class="summary-label">إجمالي الوقت الإضافي</div>
-                        <div class="summary-value overtime">${summary.total_overtime}</div>
-                    </div>
-                    <div class="summary-item">
-                        <div class="summary-label">متوسط ساعات العمل اليومي</div>
-                        <div class="summary-value">${summary.average_work_hours}</div>
-                    </div>
-                `;
-            } else if (type === 'day') {
-                html = `
-                    <div class="summary-item">
-                        <div class="summary-label">عدد الموظفين</div>
-                        <div class="summary-value">${summary.total_employees} موظف</div>
-                    </div>
-                    <div class="summary-item">
-                        <div class="summary-label">إجمالي ساعات العمل</div>
-                        <div class="summary-value">${summary.total_work_hours}</div>
-                    </div>
-                    <div class="summary-item">
-                        <div class="summary-label">إجمالي الوقت الإضافي</div>
-                        <div class="summary-value overtime">${summary.total_overtime}</div>
-                    </div>
-                    <div class="summary-item">
-                        <div class="summary-label">متوسط ساعات العمل</div>
-                        <div class="summary-value">${summary.average_work_hours}</div>
-                    </div>
-                `;
-            } else if (type === 'period') {
-                html = `
-                    <div class="summary-item">
-                        <div class="summary-label">عدد الموظفين</div>
-                        <div class="summary-value">${summary.total_employees} موظف</div>
-                    </div>
-                    <div class="summary-item">
-                        <div class="summary-label">إجمالي أيام العمل</div>
-                        <div class="summary-value">${summary.total_days} يوم</div>
-                    </div>
-                    <div class="summary-item">
-                        <div class="summary-label">إجمالي ساعات العمل</div>
-                        <div class="summary-value">${summary.total_work_hours}</div>
-                    </div>
-                    <div class="summary-item">
-                        <div class="summary-label">إجمالي الوقت الإضافي</div>
-                        <div class="summary-value overtime">${summary.total_overtime}</div>
-                    </div>
-                `;
+                sentCount += chunk.length;
+                modalCounter.textContent = `${sentCount} / ${totalToSend}`;
+                modalProgress.style.width = `${(sentCount / totalToSend) * 100}%`;
             }
             
-            summaryContent.innerHTML = html;
-            summarySection.classList.remove("hidden");
-        }
-
-        // ✅ دوال عرض الجداول (نفس الإصدار السابق مع تحسينات بسيطة)
-        function renderEmployeeTable(days) {
-            const thead = document.getElementById("tableHead");
-            const tbody = document.getElementById("tableBody");
-            const resultsSection = document.getElementById("resultsSection");
-
-            thead.innerHTML = `
-                <tr>
-                    <th>التاريخ</th>
-                    <th>اليوم</th>
-                    <th>الدخول</th>
-                    <th>الانصراف</th>
-                    <th>ساعات العمل</th>
-                    <th>الوقت الإضافي</th>
-                    <th>عدد التسجيلات</th>
-                    <th>الحركات</th>
-                </tr>
-            `;
+            modalMessage.textContent = '✅ Send completed successfully!';
+            records = []; // Clear records on full success
+            saveToLocal();
             
-            tbody.innerHTML = days.map(day => `
-                <tr>
-                    <td>${day.date}</td>
-                    <td>${getArabicDayName(day.date)}</td>
-                    <td>${day.first_in}</td>
-                    <td>${day.last_out}</td>
-                    <td><strong>${day.work_hours_str}</strong></td>
-                    <td><strong class="overtime">${day.overtime_hours_str}</strong></td>
-                    <td>${day.entries_count}</td>
-                    <td class="movements-list">
-                        ${day.movements ? day.movements.map(m => `${m.type} ${m.time}`).join('<br>') : ''}
-                    </td>
-                </tr>
-            `).join("");
-
-            resultsSection.classList.remove("hidden");
+        } catch (error) {
+            console.error("Failed to send records:", error);
+            modalMessage.textContent = `❌ Sending failed. Remaining records have been saved.`;
+            // Only remove the records that were successfully sent
+            records = recordsToSend.slice(sentCount).reverse();
+            saveToLocal();
+        } finally {
+            setTimeout(() => {
+                isSending = false;
+                sendingModal.style.display = 'none';
+                updateUIState();
+            }, 3000);
         }
+    }
 
-        function renderDayTable(employees) {
-            const thead = document.getElementById("tableHead");
-            const tbody = document.getElementById("tableBody");
-            const resultsSection = document.getElementById("resultsSection");
+    // --- Scanner Logic ---
+    const onScanSuccess = (decodedText, decodedResult) => {
+        const now = Date.now();
+        if (decodedText === lastScannedId && (now - lastScannedAt) < DEBOUNCE_MS) return;
+        lastScannedId = decodedText;
+        lastScannedAt = now;
+        if (isScanning) addRecord(decodedText, 'QR');
+    };
 
-            thead.innerHTML = `
-                <tr>
-                    <th>كود الموظف</th>
-                    <th>الاسم</th>
-                    <th>المهنة</th>
-                    <th>الدخول</th>
-                    <th>الانصراف</th>
-                    <th>ساعات العمل</th>
-                    <th>الوقت الإضافي</th>
-                    <th>عدد التسجيلات</th>
-                    <th>الحركات</th>
-                </tr>
-            `;
-            
-            tbody.innerHTML = employees.map(emp => `
-                <tr>
-                    <td>${emp.employee_id}</td>
-                    <td>${emp.name}</td>
-                    <td>${emp.occupation}</td>
-                    <td>${emp.first_in}</td>
-                    <td>${emp.last_out}</td>
-                    <td><strong>${emp.work_hours_str}</strong></td>
-                    <td><strong class="overtime">${emp.overtime_hours_str}</strong></td>
-                    <td>${emp.entries_count}</td>
-                    <td class="movements-list">
-                        ${emp.movements ? emp.movements.map(m => `${m.type} ${m.time}`).join('<br>') : ''}
-                    </td>
-                </tr>
-            `).join("");
-
-            resultsSection.classList.remove("hidden");
+    function startScanner() {
+        if (!movementSelect.value) {
+            showMessage('الرجاء اختيار نوع الحركة أولاً.', 'error');
+            return;
         }
-
-        function renderPeriodTable(employees) {
-            const thead = document.getElementById("tableHead");
-            const tbody = document.getElementById("tableBody");
-            const resultsSection = document.getElementById("resultsSection");
-
-            thead.innerHTML = `
-                <tr>
-                    <th>كود الموظف</th>
-                    <th>الاسم</th>
-                    <th>المهنة</th>
-                    <th>أيام الحضور</th>
-                    <th>إجمالي ساعات العمل</th>
-                    <th>إجمالي الوقت الإضافي</th>
-                    <th>متوسط الساعات اليومي</th>
-                </tr>
-            `;
-            
-            tbody.innerHTML = employees.map(emp => `
-                <tr>
-                    <td>${emp.employee_id}</td>
-                    <td>${emp.name}</td>
-                    <td>${emp.occupation}</td>
-                    <td>${emp.days_present}</td>
-                    <td><strong>${emp.total_work_hours_str}</strong></td>
-                    <td><strong class="overtime">${emp.total_overtime_hours_str}</strong></td>
-                    <td>${emp.average_daily_hours}</td>
-                </tr>
-            `).join("");
-
-            resultsSection.classList.remove("hidden");
-        }
-
-        // ✅ دوال مساعدة (نفس الإصدار السابق)
-        function calculatePeriodSummary(employees) {
-            let totalEmployees = employees.length;
-            let totalDays = 0;
-            let totalWorkMinutes = 0;
-            let totalOvertimeMinutes = 0;
-            
-            employees.forEach(emp => {
-                totalDays += emp.days_present;
-                const workTime = emp.total_work_hours_str.split(':');
-                totalWorkMinutes += parseInt(workTime[0]) * 60 + parseInt(workTime[1]);
-                
-                const overtime = emp.total_overtime_hours_str.split(':');
-                totalOvertimeMinutes += parseInt(overtime[0]) * 60 + parseInt(overtime[1]);
-            });
-            
-            return {
-                total_employees: totalEmployees,
-                total_days: totalDays,
-                total_work_hours: minutesToTimeStr(totalWorkMinutes),
-                total_overtime: minutesToTimeStr(totalOvertimeMinutes)
-            };
-        }
-
-        function minutesToTimeStr(minutes) {
-            if (minutes <= 0) return "0:00";
-            const h = Math.floor(minutes / 60);
-            const m = minutes % 60;
-            return `${h}:${m.toString().padStart(2, "0")}`;
-        }
-
-        function getArabicDayName(dateString) {
-            const days = ['الأحد', 'الإثنين', 'الثلاثاء', 'الأربعاء', 'الخميس', 'الجمعة', 'السبت'];
-            const date = new Date(dateString);
-            return days[date.getDay()];
-        }
-
-        function exportToExcel() {
-            const table = document.getElementById("resultsTable");
-            let csv = [];
-            
-            const headers = [];
-            for (let i = 0; i < table.rows[0].cells.length; i++) {
-                headers.push(table.rows[0].cells[i].textContent);
+        if (isScanning) return;
+        html5QrCode = new Html5Qrcode(READER_ID);
+        const config = { fps: 10, qrbox: { width: 250, height: 250 }, aspectRatio: 1.0 };
+        Html5Qrcode.getCameras().then(devices => {
+            if (devices && devices.length) {
+                const cameraId = devices.find(d => (d.label || '').toLowerCase().includes('back'))?.id || devices[0].id;
+                html5QrCode.start(cameraId, config, onScanSuccess, (err) => {})
+                    .then(() => {
+                        isScanning = true;
+                        try {
+                            const track = html5QrCode.getRunningTrack();
+                            if (track) {
+                                const capabilities = track.getCapabilities();
+                                canUseFlash = !!(capabilities && typeof capabilities.torch === 'boolean');
+                            }
+                        } catch (e) {
+                            console.warn("Could not check torch capabilities:", e);
+                            canUseFlash = false;
+                        }
+                        updateUIState();
+                    })
+                    .catch(err => {
+                        console.error("Failed to start scanner:", err);
+                        showMessage('خطأ: لا يمكن الوصول للكاميرا. تأكد من الأذونات.', 'error');
+                        html5QrCode = null;
+                    });
+            } else {
+                showMessage('خطأ: لم يتم العثور على كاميرا.', 'error');
             }
-            csv.push(headers.join(","));
-            
-            for (let i = 1; i < table.rows.length; i++) {
-                const row = [];
-                for (let j = 0; j < table.rows[i].cells.length; j++) {
-                    row.push(table.rows[i].cells[j].textContent);
-                }
-                csv.push(row.join(","));
-            }
-            
-            const csvContent = "\uFEFF" + csv.join("\n");
-            const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
-            const link = document.createElement("a");
-            const url = URL.createObjectURL(blob);
-            
-            link.setAttribute("href", url);
-            link.setAttribute("download", `تقرير_الحضور_${new Date().toISOString().slice(0,10)}.csv`);
-            link.style.visibility = "hidden";
-            
-            document.body.appendChild(link);
-            link.click();
-            document.body.removeChild(link);
-        }
+        }).catch(err => {
+            console.error("Camera permissions error:", err);
+            showMessage('خطأ: لا يمكن الوصول للكاميرا. تأكد من الأذونات.', 'error');
+        });
+    }
 
-        function printReport() {
-            const printContent = document.getElementById("resultsSection").innerHTML;
-            const summaryContent = document.getElementById("summarySection").innerHTML;
-            const originalContent = document.body.innerHTML;
-            
-            document.body.innerHTML = `
-                <div style="direction: rtl; text-align: right; font-family: Arial, sans-serif; padding: 20px;">
-                    <h2 style="text-align: center; color: #06212a;">تقرير الحضور والانصراف - مترو أبو قير</h2>
-                    ${summaryContent}
-                    ${printContent}
-                </div>
-            `;
-            
-            window.print();
-            document.body.innerHTML = originalContent;
-            location.reload();
+    function stopScanner() {
+        if (html5QrCode && isScanning) {
+            html5QrCode.stop()
+                .then(() => { showMessage('تم إيقاف الماسح.', 'info'); })
+                .catch(err => { console.error("Failed to stop scanner cleanly:", err); })
+                .finally(() => {
+                    isScanning = false;
+                    html5QrCode = null;
+                    lastScannedId = null;
+                    updateUIState();
+                });
         }
+    }
 
-        // تعيين التواريخ الافتراضية
-        window.onload = function() {
-            const today = new Date().toISOString().split('T')[0];
-            const firstDay = new Date();
-            firstDay.setDate(1);
-            const firstDayStr = firstDay.toISOString().split('T')[0];
-            
-            document.getElementById('fromDate').value = firstDayStr;
-            document.getElementById('toDate').value = today;
-            document.getElementById('singleDay').value = today;
-            document.getElementById('periodFrom').value = firstDayStr;
-            document.getElementById('periodTo').value = today;
-        };
-    </script>
+    async function toggleFlash() {
+        if (!isScanning || !html5QrCode || !canUseFlash) return;
+        const newState = !isFlashOn;
+        try {
+            const track = html5QrCode.getRunningTrack();
+            if (!track) return;
+            await track.applyConstraints({ advanced: [{ torch: newState }] });
+            isFlashOn = newState;
+            updateFlashUI();
+        } catch (err) {
+            console.error("Failed to set flash state:", err);
+            showMessage('فشل التحكم بالفلاش. قد لا يكون مدعومًا.', 'error');
+            canUseFlash = false;
+            updateUIState();
+        }
+    }
+
+    function toggleMute() {
+        isMuted = !isMuted;
+        localStorage.setItem(VOLUME_STORAGE_KEY, String(isMuted));
+        updateVolumeUI();
+    }
+
+    // --- Event Handlers & Storage ---
+    function handleManualAdd() {
+        const value = manualInput.value.trim();
+        if (!value) {
+            showMessage('أدخل رقمًا صالحًا', 'error');
+            return;
+        }
+        if (addRecord(value, 'Manual')) {
+            manualInput.value = '';
+        }
+    }
+
+    function saveToLocal() {
+        try {
+            localStorage.setItem(LOCAL_STORAGE_KEY_RECORDS, JSON.stringify(records));
+        } catch (e) { console.error("Failed to save to local storage", e); }
+    }
+
+    function loadFromLocal() {
+        try {
+            const stored = localStorage.getItem(LOCAL_STORAGE_KEY_RECORDS);
+            if (stored) records = JSON.parse(stored);
+        } catch (e) { console.error("Failed to load from local storage", e); records = []; }
+    }
+
+    function loadVolumePreference() {
+        try {
+            isMuted = localStorage.getItem(VOLUME_STORAGE_KEY) === 'true';
+        } catch (e) { console.error("Failed to load volume preference", e); isMuted = false; }
+    }
+
+    function getDeviceId() {
+        let id = localStorage.getItem(DEVICE_ID_KEY);
+        if (!id) {
+            id = `device-${Date.now()}-${Math.random().toString(36).substring(2, 11)}`;
+            localStorage.setItem(DEVICE_ID_KEY, id);
+        }
+        return id;
+    };
+
+    // --- Initialization ---
+    try {
+        beepSound = new Audio("data:audio/wav;base64," + BEEP_BASE64);
+        beepSound.volume = 1.0;
+    } catch (e) { console.error("Failed to initialize audio object:", e); }
+
+    startBtn.addEventListener('click', startScanner);
+    stopBtn.addEventListener('click', stopScanner);
+    flashBtn.addEventListener('click', toggleFlash);
+    volumeBtn.addEventListener('click', toggleMute);
+    manualAddBtn.addEventListener('click', handleManualAdd);
+    sendBtn.addEventListener('click', handleSendToGoogle);
+    movementSelect.addEventListener('change', updateThemeColor);
+    manualInput.addEventListener('input', () => {
+        manualInput.value = manualInput.value.replace(/[^0-9]/g, '');
+    });
+    
+    deviceId = getDeviceId();
+    loadFromLocal();
+    loadVolumePreference();
+    updateUIState();
+    updateThemeColor();
+    updateVolumeUI();
+});
+</script>
+
 </body>
 </html>
+--- START OF FILE types.ts ------ START OF FILE constants.ts ------ START OF FILE App.tsx ---
