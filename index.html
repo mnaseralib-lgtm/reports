@@ -19,11 +19,6 @@
       input[type=number]::-webkit-inner-spin-button,
       input[type=number]::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
       input[type=number] { -moz-appearance: textfield; }
-      @keyframes pulse-yellow {
-        0%, 100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(250, 204, 21, 0.7); }
-        50% { transform: scale(1.05); box-shadow: 0 0 0 7px rgba(250, 204, 21, 0); }
-      }
-      .animate-pulse-yellow { animation: pulse-yellow 1.5s infinite; }
     </style>
 </head>
 <body class="bg-gray-100 transition-colors duration-500 ease-in-out">
@@ -57,12 +52,6 @@
                         <button id="stopBtn" class="flex items-center justify-center gap-2 px-4 py-2 font-semibold text-white bg-red-500 rounded-md shadow-sm hover:bg-red-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors">
                            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-5 h-5"><circle cx="12" cy="12" r="10" /><rect width="6" height="6" x="9" y="9" /></svg>
                             <span>Stop</span>
-                        </button>
-                         <button id="flashBtn" class="flex items-center justify-center p-2.5 font-semibold text-white bg-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-offset-2 transition-all duration-300 disabled:bg-gray-400 disabled:cursor-not-allowed" disabled>
-                            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-5 h-5">
-                                <path id="flashPath" d="M13 2 3 14h9l-1 8 10-12h-9l1-8z"></path>
-                            </svg>
-                            <span class="sr-only">Toggle Flash</span>
                         </button>
                         <button id="volumeBtn" class="flex items-center justify-center p-2.5 font-semibold text-white bg-gray-600 rounded-md shadow-sm hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500 transition-colors">
                             <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-5 h-5">
@@ -124,8 +113,6 @@ document.addEventListener('DOMContentLoaded', () => {
     let records = [];
     let html5QrCode = null;
     let isScanning = false;
-    let isFlashOn = false;
-    let canUseFlash = false;
     let isMuted = false;
     let lastScannedId = null;
     let lastScannedAt = 0;
@@ -138,8 +125,6 @@ document.addEventListener('DOMContentLoaded', () => {
     const scanCountEl = document.getElementById('scanCount');
     const startBtn = document.getElementById('startBtn');
     const stopBtn = document.getElementById('stopBtn');
-    const flashBtn = document.getElementById('flashBtn');
-    const flashPath = document.getElementById('flashPath');
     const volumeBtn = document.getElementById('volumeBtn');
     const volumeOnPath = document.getElementById('volumeOnPath');
     const volumeOffPath = document.getElementById('volumeOffPath');
@@ -176,7 +161,6 @@ document.addEventListener('DOMContentLoaded', () => {
     function updateUIState() {
         startBtn.disabled = isScanning;
         stopBtn.disabled = !isScanning;
-        flashBtn.disabled = !isScanning || !canUseFlash;
         sendBtn.disabled = records.length === 0 || isSending;
 
         if (isScanning) {
@@ -188,27 +172,9 @@ document.addEventListener('DOMContentLoaded', () => {
             readerEl.innerHTML = '';
             readerEl.classList.remove('border-emerald-500');
             readerEl.classList.add('border-gray-300');
-            isFlashOn = false;
-            canUseFlash = false;
-            updateFlashUI();
-            flashBtn.disabled = true;
         }
         scanCountEl.textContent = `سجلات لم ترسل: ${records.length}`;
         sendBtnText.textContent = `Send Data (${records.length})`;
-    }
-
-    function updateFlashUI() {
-        const activeClasses = ['bg-yellow-400', 'hover:bg-yellow-500', 'text-black', 'ring-2', 'ring-yellow-300', 'ring-offset-1', 'animate-pulse-yellow'];
-        const inactiveClasses = ['bg-gray-600', 'hover:bg-gray-700', 'text-white'];
-        if (isFlashOn) {
-            flashBtn.classList.remove(...inactiveClasses);
-            flashBtn.classList.add(...activeClasses);
-            flashPath.setAttribute('fill', 'currentColor');
-        } else {
-            flashBtn.classList.remove(...activeClasses);
-            flashBtn.classList.add(...inactiveClasses);
-            flashPath.setAttribute('fill', 'none');
-        }
     }
 
     function updateVolumeUI() {
@@ -359,24 +325,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 html5QrCode.start(cameraId, config, onScanSuccess, (err) => {})
                     .then(() => {
                         isScanning = true;
-                        // --- NEW: Refined Flash Capability Check ---
-                        try {
-                            const track = html5QrCode.getRunningTrack();
-                            if (track) {
-                                const capabilities = track.getCapabilities();
-                                // Ensure the 'torch' capability is explicitly a boolean (supported).
-                                if (capabilities && typeof capabilities.torch === 'boolean') {
-                                    canUseFlash = true;
-                                    console.log("Flashlight (torch) is supported.");
-                                } else {
-                                    canUseFlash = false;
-                                    console.warn("Flashlight (torch) not supported by this camera track.");
-                                }
-                            }
-                        } catch (e) {
-                            console.error("Error checking for flashlight capabilities:", e);
-                            canUseFlash = false;
-                        }
                         updateUIState();
                     })
                     .catch(err => {
@@ -404,36 +352,6 @@ document.addEventListener('DOMContentLoaded', () => {
                     lastScannedId = null;
                     updateUIState();
                 });
-        }
-    }
-
-    // --- NEW: Refined Flash Toggle Logic ---
-    async function toggleFlash() {
-        if (!isScanning || !html5QrCode || !canUseFlash) {
-            return;
-        }
-        
-        const newState = !isFlashOn;
-        try {
-            const track = html5QrCode.getRunningTrack();
-            if (!track) {
-                console.error("Could not get running video track to control flash.");
-                return;
-            }
-            // Apply the 'torch' constraint. This is an async operation.
-            await track.applyConstraints({
-                advanced: [{ torch: newState }]
-            });
-            // If successful, update the state and UI.
-            isFlashOn = newState;
-            updateFlashUI();
-        } catch (err) {
-            // If it fails, the device/browser may not truly support it.
-            // Inform the user once and disable the feature to prevent further errors.
-            console.error("Failed to apply torch constraint:", err);
-            showMessage('فشل التحكم بالفلاش. قد لا يكون مدعومًا.', 'error');
-            canUseFlash = false; // Disable the feature permanently for this session.
-            updateUIState(); // Update UI to disable the button.
         }
     }
 
@@ -491,7 +409,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
     startBtn.addEventListener('click', startScanner);
     stopBtn.addEventListener('click', stopScanner);
-    flashBtn.addEventListener('click', toggleFlash);
     volumeBtn.addEventListener('click', toggleMute);
     manualAddBtn.addEventListener('click', handleManualAdd);
     sendBtn.addEventListener('click', handleSendToGoogle);
@@ -510,4 +427,4 @@ document.addEventListener('DOMContentLoaded', () => {
 </script>
 
 </body>
-</html>--- END OF FILE App.tsx ---
+</html>
