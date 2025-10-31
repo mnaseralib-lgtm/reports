@@ -1,748 +1,518 @@
 <!DOCTYPE html>
 <html lang="ar" dir="rtl">
 <head>
-<meta charset="utf-8" />
-<meta name="viewport" content="width=device-width,initial-scale=1" />
-<title>نظام الحضور - مترو أبو قير</title>
-<link rel="manifest" href="manifest.json">
-<meta name="theme-color" content="#10b981"/>
-<link href="https://fonts.googleapis.com/css2?family=Cairo:wght@300;400;600;700&display=swap" rel="stylesheet">
-<style>
-  :root {
-    --primary: #10b981;
-    --secondary: #3b82f6;
-    --danger: #ef4444;
-    --warning: #f59e0b;
-    --dark: #06212a;
-    --light-bg: #f8fafc;
-  }
-  
-  * {
-    box-sizing: border-box;
-    margin: 0;
-    padding: 0;
-  }
-  
-  body {
-    font-family: "Cairo", Arial, sans-serif;
-    background: var(--light-bg);
-    color: #111;
-    padding: 0;
-    margin: 0;
-    direction: rtl;
-    overflow-x: hidden;
-  }
-  
-  .app {
-    min-height: 100vh;
-    position: relative;
-  }
-  
-  /* Mobile Header */
-  .mobile-header {
-    background: var(--dark);
-    color: white;
-    padding: 15px;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    box-shadow: 0 2px 10px rgba(0,0,0,0.1);
-    position: sticky;
-    top: 0;
-    z-index: 1000;
-  }
-  
-  .menu-toggle {
-    background: none;
-    border: none;
-    color: white;
-    font-size: 20px;
-    cursor: pointer;
-    padding: 5px;
-  }
-  
-  .app-title {
-    font-size: 18px;
-    font-weight: 700;
-    text-align: center;
-    flex: 1;
-  }
-  
-  /* Sidebar - Hidden by default on mobile */
-  .sidebar {
-    position: fixed;
-    top: 0;
-    right: -280px;
-    width: 280px;
-    height: 100vh;
-    background: var(--dark);
-    color: #fff;
-    padding: 20px;
-    transition: all 0.3s ease;
-    z-index: 999;
-    box-shadow: -2px 0 10px rgba(0,0,0,0.2);
-    overflow-y: auto;
-  }
-  
-  .sidebar.active {
-    right: 0;
-  }
-  
-  .sidebar-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 30px;
-    padding-bottom: 15px;
-    border-bottom: 1px solid rgba(255,255,255,0.1);
-  }
-  
-  .close-menu {
-    background: none;
-    border: none;
-    color: white;
-    font-size: 20px;
-    cursor: pointer;
-  }
-  
-  .nav-links {
-    display: flex;
-    flex-direction: column;
-    gap: 10px;
-  }
-  
-  .nav-link {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    color: #fff;
-    text-decoration: none;
-    padding: 12px 15px;
-    border-radius: 10px;
-    transition: all 0.2s;
-    font-size: 16px;
-  }
-  
-  .nav-link:hover {
-    background: rgba(255,255,255,0.1);
-    transform: translateX(-5px);
-  }
-  
-  .nav-link.active {
-    background: var(--primary);
-  }
-  
-  .nav-icon {
-    font-size: 18px;
-    width: 24px;
-    text-align: center;
-  }
-  
-  .overlay {
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    background: rgba(0,0,0,0.5);
-    z-index: 998;
-    display: none;
-  }
-  
-  .overlay.active {
-    display: block;
-  }
-  
-  .main-content {
-    padding: 20px 15px;
-    max-width: 100%;
-    overflow-x: hidden;
-  }
-  
-  .card {
-    background: #fff;
-    padding: 20px;
-    border-radius: 16px;
-    box-shadow: 0 4px 20px rgba(0,0,0,0.08);
-    border: 1px solid #e5e7eb;
-    margin-bottom: 20px;
-  }
-  
-  h1 {
-    font-size: 20px;
-    margin: 0 0 15px;
-    color: var(--dark);
-    text-align: center;
-  }
-  
-  .controls-grid {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 12px;
-    margin-bottom: 20px;
-  }
-  
-  .control-group {
-    display: flex;
-    flex-direction: column;
-    gap: 8px;
-  }
-  
-  .control-label {
-    font-size: 14px;
-    color: #6b7280;
-    font-weight: 600;
-  }
-  
-  select, input[type=text] {
-    padding: 12px;
-    border-radius: 10px;
-    border: 1px solid #d1d5db;
-    font-size: 16px;
-    font-family: "Cairo";
-    background: white;
-    width: 100%;
-  }
-  
-  .buttons-grid {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 10px;
-    margin: 15px 0;
-  }
-  
-  button {
-    padding: 14px;
-    border-radius: 12px;
-    border: none;
-    color: #fff;
-    font-weight: 600;
-    cursor: pointer;
-    font-family: "Cairo";
-    font-size: 15px;
-    transition: all 0.2s;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 8px;
-  }
-  
-  button:active {
-    transform: scale(0.98);
-  }
-  
-  #startBtn {
-    background: var(--primary);
-  }
-  
-  #stopBtn {
-    background: var(--danger);
-  }
-  
-  #exportBtn {
-    background: #06b6d4;
-  }
-  
-  #syncBtn {
-    background: #8b5cf6;
-  }
-  
-  .counter-badge {
-    background: white;
-    padding: 15px;
-    border-radius: 12px;
-    text-align: center;
-    border: 2px solid #d1fae5;
-    margin: 10px 0;
-  }
-  
-  .counter-value {
-    font-size: 24px;
-    font-weight: 800;
-    color: var(--primary);
-    display: block;
-  }
-  
-  .counter-label {
-    font-size: 14px;
-    color: #6b7280;
-  }
-  
-  .pending-indicator {
-    background: var(--warning);
-    color: white;
-    padding: 4px 8px;
-    border-radius: 8px;
-    font-size: 12px;
-    margin-top: 5px;
-    display: inline-block;
-  }
-  
-  #reader {
-    width: 100%;
-    max-width: 300px;
-    margin: 15px auto;
-    border-radius: 12px;
-    overflow: hidden;
-    background: #000;
-    box-shadow: 0 4px 15px rgba(0,0,0,0.2);
-  }
-  
-  .manual-input-section {
-    display: flex;
-    gap: 10px;
-    margin: 20px 0;
-  }
-  
-  .manual-input-section input {
-    flex: 1;
-  }
-  
-  .manual-input-section button {
-    min-width: 80px;
-  }
-  
-  .status-bar {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: 10px 0;
-    border-top: 1px solid #e5e7eb;
-    margin-top: 15px;
-  }
-  
-  .connection-status {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    font-size: 14px;
-  }
-  
-  .status-indicator {
-    width: 8px;
-    height: 8px;
-    border-radius: 50%;
-    display: inline-block;
-  }
-  
-  .status-online {
-    background: var(--primary);
-  }
-  
-  .status-offline {
-    background: var(--danger);
-  }
-  
-  .confirmation-message, .error-message {
-    position: fixed;
-    top: 20px;
-    right: 20px;
-    left: 20px;
-    padding: 15px;
-    border-radius: 12px;
-    z-index: 1001;
-    display: none;
-    font-weight: 700;
-    text-align: center;
-    backdrop-filter: blur(10px);
-    box-shadow: 0 4px 15px rgba(0,0,0,0.2);
-  }
-  
-  .confirmation-message {
-    background: rgba(16,185,129,0.95);
-    color: #fff;
-  }
-  
-  .error-message {
-    background: rgba(239,68,68,0.95);
-    color: #fff;
-  }
-  
-  .auto-sync-indicator {
-    background: rgba(139,92,246,0.1);
-    color: #8b5cf6;
-    padding: 8px 12px;
-    border-radius: 8px;
-    font-size: 12px;
-    display: flex;
-    align-items: center;
-    gap: 6px;
-    margin-top: 10px;
-  }
-  
-  @media (min-width: 768px) {
-    .sidebar {
-      position: static;
-      width: 250px;
-      height: auto;
-    }
-    
-    .app {
-      display: flex;
-    }
-    
-    .mobile-header {
-      display: none;
-    }
-    
-    .overlay {
-      display: none !important;
-    }
-    
-    .main-content {
-      flex: 1;
-      padding: 25px;
-    }
-    
-    .controls-grid {
-      grid-template-columns: 1fr 1fr 1fr;
-    }
-  }
-</style>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Attendance Tracker</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/html5-qrcode" type="text/javascript"></script>
+    <meta name="theme-color" content="#10b981"/>
+    <style>
+      body {
+        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+      }
+      @keyframes fadeInDown {
+        from { opacity: 0; transform: translate(-50%, -20px); }
+        to { opacity: 1; transform: translate(-50%, 0); }
+      }
+      .animate-fade-in-down { animation: fadeInDown 0.3s ease-out forwards; }
+      input[type=number]::-webkit-inner-spin-button,
+      input[type=number]::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
+      input[type=number] { -moz-appearance: textfield; }
+      @keyframes pulse-yellow {
+        0%, 100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(250, 204, 21, 0.7); }
+        50% { transform: scale(1.05); box-shadow: 0 0 0 7px rgba(250, 204, 21, 0); }
+      }
+      .animate-pulse-yellow { animation: pulse-yellow 1.5s infinite; }
+    </style>
 </head>
-<body>
-<div class="app">
-  <!-- Mobile Header -->
-  <div class="mobile-header">
-    <button class="menu-toggle" onclick="toggleSidebar()">☰</button>
-    <div class="app-title">نظام الحضور - مترو أبو قير</div>
-    <div style="width: 40px;"></div> <!-- Spacer for balance -->
-  </div>
+<body class="bg-gray-100 transition-colors duration-500 ease-in-out">
 
-  <!-- Sidebar Navigation -->
-  <div class="sidebar" id="sidebar">
-    <div class="sidebar-header">
-      <h3>القائمة الرئيسية</h3>
-      <button class="close-menu" onclick="toggleSidebar()">✕</button>
+    <div id="app-container" class="min-h-screen flex items-start justify-center p-4 pt-8 sm:p-6">
+        <div class="w-full max-w-3xl mx-auto bg-white p-5 sm:p-6 rounded-2xl shadow-lg transition-colors duration-500 ease-in-out">
+            <header class="text-center mb-6">
+                <h1 class="text-2xl sm:text-3xl font-bold text-gray-800">Abo Qir Metro JV Orascom</h1>
+                <p class="text-sm text-gray-500 mt-1">HR Department Attendance Tracker</p>
+            </header>
+
+            <main>
+                <div class="bg-gray-50 p-4 rounded-lg flex flex-col sm:flex-row items-center justify-center gap-4 flex-wrap mb-4 border border-gray-200">
+                    <div class="flex items-center gap-2">
+                        <label for="movementSelect" class="text-sm font-medium text-gray-700 whitespace-nowrap">نوع الحركة:</label>
+                        <select id="movementSelect" class="block w-40 px-3 py-2 border-2 rounded-md shadow-sm focus:outline-none focus:ring-2 sm:text-sm transition-all duration-300">
+                            <option value="">اختر نوع الحركة</option>
+                            <option value="دخول">دخول</option>
+                            <option value="انصراف">انصراف</option>
+                            <option value="انصراف مسائي">مسائي</option>
+                        </select>
+                    </div>
+                    <div id="scanCount" class="font-bold text-blue-800 bg-blue-100 px-3 py-2 rounded-md">
+                        سجلات لم ترسل: 0
+                    </div>
+                    <div class="flex gap-2">
+                         <button id="startBtn" class="flex items-center justify-center gap-2 px-4 py-2 font-semibold text-white bg-emerald-500 rounded-md shadow-sm hover:bg-emerald-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-emerald-500 disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-5 h-5"><rect width="5" height="5" x="3" y="3" rx="1" /><rect width="5" height="5" x="16" y="3" rx="1" /><rect width="5" height="5" x="3" y="16" rx="1" /><path d="M21 16h-3a2 2 0 0 0-2 2v3" /><path d="M21 21v.01" /><path d="M12 7v3a2 2 0 0 1-2 2H7" /><path d="M3 12h.01" /><path d="M12 3h.01" /><path d="M12 16.01V12" /><path d="M16 12h.01" /><path d="M21 12h.01" /><path d="M12 21h.01" /></svg>
+                            <span>Scan QR</span>
+                        </button>
+                        <button id="stopBtn" class="flex items-center justify-center gap-2 px-4 py-2 font-semibold text-white bg-red-500 rounded-md shadow-sm hover:bg-red-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors">
+                           <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-5 h-5"><circle cx="12" cy="12" r="10" /><rect width="6" height="6" x="9" y="9" /></svg>
+                            <span>Stop</span>
+                        </button>
+                         <button id="flashBtn" class="flex items-center justify-center p-2.5 font-semibold text-white bg-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-offset-2 transition-all duration-300 disabled:bg-gray-400 disabled:cursor-not-allowed" disabled>
+                            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-5 h-5">
+                                <path id="flashPath" d="M13 2 3 14h9l-1 8 10-12h-9l1-8z"></path>
+                            </svg>
+                            <span class="sr-only">Toggle Flash</span>
+                        </button>
+                        <button id="volumeBtn" class="flex items-center justify-center p-2.5 font-semibold text-white bg-gray-600 rounded-md shadow-sm hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500 transition-colors">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-5 h-5">
+                                <polygon id="volumeOnPath" points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon><path id="volumeOffPath" d="M11 5 6 9H2v6h4l5 4V5zM23 9l-6 6M17 9l6 6" style="display: none;"></path>
+                            </svg>
+                            <span class="sr-only">Toggle Sound</span>
+                        </button>
+                    </div>
+                </div>
+                
+                <div id="reader" class="w-full max-w-md mx-auto rounded-lg overflow-hidden bg-black border-4 border-gray-300 transition-all duration-300"></div>
+
+                <div class="manual-entry mt-6 pt-6 border-t">
+                    <div class="flex flex-col sm:flex-row items-center justify-center gap-2">
+                       <input id="manualInput" type="text" inputmode="numeric" pattern="[0-9]*" maxlength="14" placeholder="إدخال يدوي - 14 رقم بحد أقصى" class="w-full sm:w-64 px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500" />
+                        <button id="manualAddBtn" class="w-full sm:w-auto flex items-center justify-center gap-2 px-4 py-2 font-semibold text-white bg-blue-500 rounded-md shadow-sm hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-5 h-5"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="16"></line><line x1="8" y1="12" x2="16" y2="12"></line></svg>
+                            <span>إضافة يدوي</span>
+                        </button>
+                    </div>
+                </div>
+
+                <div class="text-center mt-8">
+                     <button id="sendBtn" class="inline-flex items-center justify-center gap-2 px-5 py-2.5 font-semibold text-white bg-green-500 rounded-md shadow-sm hover:bg-green-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 transition-colors disabled:bg-gray-400 disabled:cursor-not-allowed">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-5 h-5"><line x1="22" y1="2" x2="11" y2="13"></line><polygon points="22 2 15 22 11 13 2 9 22 2"></polygon></svg>
+                        <span id="sendBtnText">Send Data (0)</span>
+                    </button>
+                </div>
+            </main>
+        </div>
     </div>
-    <div class="nav-links">
-      <a href="index.html" class="nav-link active">
-        <span class="nav-icon">🏠</span>
-        <span>الصفحة الرئيسية</span>
-      </a>
-      <a href="reports.html" class="nav-link">
-        <span class="nav-icon">📊</span>
-        <span>التقارير</span>
-      </a>
-      <a href="#" class="nav-link" id="offlineStatus">
-        <span class="nav-icon">⚡</span>
-        <span>حالة الاتصال</span>
-        <span class="status-indicator status-online"></span>
-      </a>
-    </div>
-  </div>
-
-  <!-- Overlay -->
-  <div class="overlay" id="overlay" onclick="toggleSidebar()"></div>
-
-  <!-- Main Content -->
-  <main class="main-content">
-    <div class="card">
-      <h1>📱 نظام الحضور والانصراف</h1>
-      
-      <div class="controls-grid">
-        <div class="control-group">
-          <label class="control-label">نوع الحركة:</label>
-          <select id="movementSelect">
-            <option value="دخول">دخول</option>
-            <option value="انصراف">انصراف</option>
-            <option value="انصراف مسائي">انصراف مسائي</option>
-          </select>
+    
+    <div id="message" class="fixed top-5 left-1/2 -translate-x-1/2 px-6 py-3 rounded-lg shadow-xl text-white font-bold text-center z-50" style="display: none;"></div>
+    
+    <div id="sendingModal" class="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center z-50 p-4" style="display: none;" dir="ltr">
+        <div class="bg-white rounded-lg shadow-2xl p-6 w-full max-w-sm text-center">
+            <h3 class="text-xl font-bold text-gray-800 mb-4">Sending Data to Google</h3>
+            <p id="modalMessage" class="text-gray-600 mb-2">Preparing to send...</p>
+            <div class="w-full bg-gray-200 rounded-full h-4 mb-4 overflow-hidden">
+                <div id="modalProgress" class="bg-blue-500 h-4 rounded-full transition-all duration-300 ease-linear" style="width: 0%"></div>
+            </div>
+            <p id="modalCounter" class="text-sm font-semibold text-blue-700">0 / 0</p>
         </div>
-        
-        <div class="control-group">
-          <label class="control-label">الحالة:</label>
-          <div class="counter-badge">
-            <span class="counter-value" id="scanCount">0</span>
-            <span class="counter-label">عدد الحالات</span>
-            <div id="pendingCount" class="pending-indicator" style="display:none">0 في الانتظار</div>
-          </div>
-        </div>
-      </div>
-
-      <div class="buttons-grid">
-        <button id="startBtn">▶️ تشغيل</button>
-        <button id="stopBtn">⏹️ إيقاف</button>
-        <button id="syncBtn">🔄 مزامنة</button>
-        <button id="exportBtn">📥 تصدير</button>
-      </div>
-
-      <div id="reader"></div>
-
-      <div class="manual-input-section">
-        <input type="text" id="manualInput" placeholder="إدخال يدوي - رقم أو اسم">
-        <button id="manualAddBtn">➕ إضافة</button>
-      </div>
-
-      <div class="auto-sync-indicator">
-        <span>🔄 المزامنة التلقائية مفعلة</span>
-      </div>
-
-      <div class="status-bar">
-        <div class="connection-status" id="connectionStatus">
-          <span>حالة الاتصال:</span>
-          <span id="statusText">متصل</span>
-          <span class="status-indicator status-online" id="statusDot"></span>
-        </div>
-        <div class="small">الموارد البشرية - مترو أبو قير</div>
-      </div>
     </div>
 
-    <div id="confirmMsg" class="confirmation-message"></div>
-    <div id="errorMsg" class="error-message"></div>
-  </main>
-</div>
-
-<script src="https://unpkg.com/html5-qrcode"></script>
 <script>
-// ---------------- CONFIG ----------------
-const GOOGLE_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxVdfNuHySV9eDaRs3dK_PfrExS8W_bdMmvpH0ts-x4co20HGYe2tPSjj_ffONbIHvk/exec';
+document.addEventListener('DOMContentLoaded', () => {
+    // --- Constants ---
+    const GOOGLE_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxVdfNuHySV9eDaRs3dK_PfrExS8W_bdMmvpH0ts-x4co20HGYe2tPSjj_ffONbIHvk/exec';
+    const LOCAL_STORAGE_KEY_RECORDS = 'attendance_records_local_v2';
+    const VOLUME_STORAGE_KEY = 'attendance_app_isMuted';
+    const DEVICE_ID_KEY = 'attendance_app_device_id_v2';
+    const DEBOUNCE_MS = 2000;
+    const READER_ID = "reader";
+    const BEEP_BASE64 = 'UklGRl9vT19XQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YV8vT19AAAAA//8CAP//AgD//gIA//4CAP//BQD//wUA//8HAP//BwD//wMA//8CAP//AwD//wEAAAAA';
+    const SEND_CHUNK_SIZE = 50;
 
-// ---------------- State ----------------
-let records = [];
-let pendingRecords = [];
-let scanCount = 0;
-let currentScanner = null;
-let lastScannedId = null;
-let lastScannedAt = 0;
-let autoSyncInterval = null;
-const DEBOUNCE_MS = 1500;
+    // --- State ---
+    let records = [];
+    let html5QrCode = null;
+    let isScanning = false;
+    let isFlashOn = false;
+    let canUseFlash = false;
+    let isMuted = false;
+    let lastScannedId = null;
+    let lastScannedAt = 0;
+    let beepSound = null;
+    let deviceId = '';
+    let isSending = false;
 
-// ---------------- Mobile Sidebar Functions ----------------
-function toggleSidebar() {
-  const sidebar = document.getElementById('sidebar');
-  const overlay = document.getElementById('overlay');
-  sidebar.classList.toggle('active');
-  overlay.classList.toggle('active');
-}
+    // --- DOM Elements ---
+    const movementSelect = document.getElementById('movementSelect');
+    const scanCountEl = document.getElementById('scanCount');
+    const startBtn = document.getElementById('startBtn');
+    const stopBtn = document.getElementById('stopBtn');
+    const flashBtn = document.getElementById('flashBtn');
+    const flashPath = document.getElementById('flashPath');
+    const volumeBtn = document.getElementById('volumeBtn');
+    const volumeOnPath = document.getElementById('volumeOnPath');
+    const volumeOffPath = document.getElementById('volumeOffPath');
+    const readerEl = document.getElementById('reader');
+    const manualInput = document.getElementById('manualInput');
+    const manualAddBtn = document.getElementById('manualAddBtn');
+    const sendBtn = document.getElementById('sendBtn');
+    const sendBtnText = document.getElementById('sendBtnText');
+    const messageEl = document.getElementById('message');
+    const sendingModal = document.getElementById('sendingModal');
+    const modalMessage = document.getElementById('modalMessage');
+    const modalProgress = document.getElementById('modalProgress');
+    const modalCounter = document.getElementById('modalCounter');
 
-// Close sidebar when clicking on a link
-document.querySelectorAll('.nav-link').forEach(link => {
-  link.addEventListener('click', () => {
-    toggleSidebar();
-  });
-});
-
-// ---------------- Enhanced Auto-Sync Functionality ----------------
-function initializeAutoSync() {
-  // Auto-sync every 30 seconds when online and has pending records
-  autoSyncInterval = setInterval(() => {
-    if (navigator.onLine && pendingRecords.length > 0) {
-      console.log('Auto-syncing pending records...');
-      syncPendingRecords(true); // true for auto-sync
+    // --- THEME/COLOR Functions ---
+    function updateThemeColor() {
+        const value = movementSelect.value;
+        const bodyColorClasses = {
+            '': 'bg-gray-100', 'دخول': 'bg-emerald-50', 'انصراف': 'bg-blue-50', 'انصراف مسائي': 'bg-red-50'
+        };
+        const selectColorClasses = {
+            '': ['bg-white', 'text-gray-800', 'border-gray-400', 'focus:ring-emerald-500'],
+            'دخول': ['bg-emerald-500', 'text-white', 'font-semibold', 'border-emerald-600', 'focus:ring-emerald-400'],
+            'انصراف': ['bg-blue-500', 'text-white', 'font-semibold', 'border-blue-600', 'focus:ring-blue-400'],
+            'انصراف مسائي': ['bg-red-500', 'text-white', 'font-semibold', 'border-red-600', 'focus:ring-red-400']
+        };
+        document.body.className = `transition-colors duration-500 ease-in-out ${bodyColorClasses[value] || 'bg-gray-100'}`;
+        const allSelectClasses = Object.values(selectColorClasses).flat();
+        movementSelect.classList.remove(...new Set(allSelectClasses));
+        movementSelect.classList.add(...(selectColorClasses[value] || selectColorClasses['']));
     }
-  }, 30000); // 30 seconds
 
-  // Auto-sync when coming back online
-  window.addEventListener('online', () => {
-    if (pendingRecords.length > 0) {
-      setTimeout(() => {
-        showConfirmation({movement_type: '', employee_id: 'الاتصال متاح - جاري المزامنة التلقائية...'});
-        syncPendingRecords(true);
-      }, 2000);
+    // --- UI Functions ---
+    function updateUIState() {
+        startBtn.disabled = isScanning;
+        stopBtn.disabled = !isScanning;
+        flashBtn.disabled = !isScanning || !canUseFlash;
+        sendBtn.disabled = records.length === 0 || isSending;
+
+        if (isScanning) {
+            readerEl.style.minHeight = '250px';
+            readerEl.classList.add('border-emerald-500');
+            readerEl.classList.remove('border-gray-300');
+        } else {
+            readerEl.style.minHeight = '0px';
+            readerEl.innerHTML = '';
+            readerEl.classList.remove('border-emerald-500');
+            readerEl.classList.add('border-gray-300');
+            isFlashOn = false;
+            canUseFlash = false;
+            updateFlashUI();
+            flashBtn.disabled = true;
+        }
+        scanCountEl.textContent = `سجلات لم ترسل: ${records.length}`;
+        sendBtnText.textContent = `Send Data (${records.length})`;
     }
-  });
-}
 
-// ---------------- Improved Scanner Functions ----------------
-function startScanner() { 
-  if(currentScanner) return; 
-  
-  const movement = document.getElementById('movementSelect').value; 
-  if(!movement){ 
-    showError('الرجاء اختيار نوع الحركة أولاً.');
-    return; 
-  }
-  
-  const readerId = "reader"; 
-  const html5Qr = new Html5Qrcode(readerId); 
-  currentScanner = html5Qr; 
-  const config = { 
-    fps: 10, 
-    qrbox: { width: 250, height: 250 },
-    aspectRatio: 1.0
-  };
-  
-  Html5Qrcode.getCameras().then(devices => {
-    if(devices && devices.length){
-      // Try to use rear camera
-      const rearCamera = devices.find(d => 
-        d.label.toLowerCase().includes('back') || 
-        d.label.toLowerCase().includes('rear') ||
-        d.label.toLowerCase().includes('environment')
-      ) || devices[0];
-      
-      html5Qr.start(
-        rearCamera.id || { facingMode: "environment" }, 
-        config, 
-        onScanSuccess, 
-        onScanError
-      ).catch(err => {
-        console.error('Scanner start failed:', err);
-        showError('خطأ في تشغيل الكاميرا. تأكد من الأذونات.');
-        currentScanner = null;
-      });
-    } else { 
-      showError('لم يتم العثور على كاميرا متاحة.');
-      currentScanner = null;
+    function updateFlashUI() {
+        const activeClasses = ['bg-yellow-400', 'hover:bg-yellow-500', 'text-black', 'ring-2', 'ring-yellow-300', 'ring-offset-1', 'animate-pulse-yellow'];
+        const inactiveClasses = ['bg-gray-600', 'hover:bg-gray-700', 'text-white'];
+        if (isFlashOn) {
+            flashBtn.classList.remove(...inactiveClasses);
+            flashBtn.classList.add(...activeClasses);
+            flashPath.setAttribute('fill', 'currentColor');
+        } else {
+            flashBtn.classList.remove(...activeClasses);
+            flashBtn.classList.add(...inactiveClasses);
+            flashPath.setAttribute('fill', 'none');
+        }
     }
-  }).catch(err => { 
-    console.error('Camera access error:', err);
-    showError('خطأ في الوصول للكاميرا');
-    currentScanner = null;
-  }); 
-}
 
-function onScanSuccess(qrCodeMessage) {
-  const now = Date.now();
-  if(qrCodeMessage === lastScannedId && (now - lastScannedAt) < DEBOUNCE_MS) return;
-  
-  lastScannedId = qrCodeMessage; 
-  lastScannedAt = now;
-  
-  // Stop scanner temporarily to prevent multiple scans
-  if(currentScanner) {
-    currentScanner.stop().then(() => {
-      currentScanner = null;
-      handleScanned(qrCodeMessage);
-      // Restart scanner after a short delay
-      setTimeout(() => startScanner(), 1000);
-    }).catch(err => {
-      console.warn('Scanner stop error:', err);
-      currentScanner = null;
-      handleScanned(qrCodeMessage);
-      setTimeout(() => startScanner(), 1000);
+    function updateVolumeUI() {
+        if (isMuted) {
+            volumeBtn.classList.remove('bg-gray-600', 'hover:bg-gray-700');
+            volumeBtn.classList.add('bg-red-500', 'hover:bg-red-600');
+            volumeOnPath.style.display = 'none';
+            volumeOffPath.style.display = 'block';
+        } else {
+            volumeBtn.classList.add('bg-gray-600', 'hover:bg-gray-700');
+            volumeBtn.classList.remove('bg-red-500', 'hover:bg-red-600');
+            volumeOnPath.style.display = 'block';
+            volumeOffPath.style.display = 'none';
+        }
+    }
+
+    let messageTimer;
+    function showMessage(text, type = 'info') {
+        clearTimeout(messageTimer);
+        messageEl.textContent = text;
+        messageEl.className = `fixed top-5 left-1/2 -translate-x-1/2 px-6 py-3 rounded-lg shadow-xl text-white font-bold text-center z-50 animate-fade-in-down`;
+        if (type === 'success') messageEl.classList.add('bg-emerald-500');
+        else if (type === 'error') messageEl.classList.add('bg-red-500');
+        else messageEl.classList.add('bg-blue-500');
+        
+        messageEl.style.display = 'block';
+        messageTimer = setTimeout(() => { messageEl.style.display = 'none'; }, 2500);
+    }
+
+    // --- Core Functions ---
+    function playBeepAndVibrate() {
+        if (!isMuted && beepSound) {
+            beepSound.currentTime = 0;
+            beepSound.play().catch(e => console.warn('Audio playback failed:', e));
+        }
+        if (navigator.vibrate) { navigator.vibrate(180); }
+    }
+
+    function addRecord(employeeId, source) {
+        const movement = movementSelect.value;
+        if (!movement) {
+            showMessage('الرجاء اختيار نوع الحركة أولاً.', 'error');
+            return false;
+        }
+        const now = new Date();
+        const newRecord = {
+            id: `local-${now.getTime()}-${Math.random().toString(36).slice(2, 8)}`,
+            employeeId: String(employeeId).trim(),
+            movement: movement,
+            timestamp: now.toISOString(),
+            date: now.toLocaleDateString('ar-EG'),
+            time: now.toLocaleTimeString('ar-EG', { hour: '2-digit', minute: '2-digit', second: '2-digit' }),
+            source: source,
+        };
+        records.unshift(newRecord);
+        saveToLocal();
+        playBeepAndVibrate();
+        showMessage(`✅ تم تسجيل ${newRecord.movement} لـ ${newRecord.employeeId}`, 'success');
+        updateUIState();
+        return true;
+    }
+
+    async function handleSendToGoogle() {
+        if (records.length === 0 || isSending) return;
+        
+        isSending = true;
+        updateUIState();
+        sendingModal.style.display = 'flex';
+        
+        const totalToSend = records.length;
+        modalCounter.textContent = `0 / ${totalToSend}`;
+        modalProgress.style.width = '0%';
+        modalMessage.textContent = 'Preparing to send...';
+        
+        const recordsToSend = [...records].reverse(); // Send oldest records first
+        let sentCount = 0;
+        
+        try {
+            for (let i = 0; i < recordsToSend.length; i += SEND_CHUNK_SIZE) {
+                const chunk = recordsToSend.slice(i, i + SEND_CHUNK_SIZE);
+                modalMessage.textContent = `Sending ${sentCount + 1} to ${Math.min(sentCount + chunk.length, totalToSend)}...`;
+                
+                const params = new URLSearchParams();
+                const batchPayload = chunk.map(record => {
+                    const recordDate = new Date(record.timestamp);
+                    const timeFormatted = recordDate.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' });
+                    return {
+                        device_id: deviceId,
+                        employee_id: record.employeeId,
+                        movement_type: record.movement,
+                        time: timeFormatted,
+                        source: record.source
+                    };
+                });
+                params.append('records_batch', JSON.stringify(batchPayload));
+                
+                await fetch(GOOGLE_SCRIPT_URL, {
+                    method: 'POST',
+                    mode: 'no-cors',
+                    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                    body: params.toString()
+                });
+
+                sentCount += chunk.length;
+                modalCounter.textContent = `${sentCount} / ${totalToSend}`;
+                modalProgress.style.width = `${(sentCount / totalToSend) * 100}%`;
+            }
+            
+            modalMessage.textContent = '✅ Send completed successfully!';
+            records = []; // Clear records on full success
+            saveToLocal();
+            
+        } catch (error) {
+            console.error("Failed to send records:", error);
+            modalMessage.textContent = `❌ Sending failed. Remaining records have been saved.`;
+            // Only remove the records that were successfully sent
+            records = recordsToSend.slice(sentCount).reverse();
+            saveToLocal();
+        } finally {
+            setTimeout(() => {
+                isSending = false;
+                sendingModal.style.display = 'none';
+                updateUIState();
+            }, 3000);
+        }
+    }
+
+    // --- Scanner Logic ---
+    const onScanSuccess = (decodedText, decodedResult) => {
+        const now = Date.now();
+        if (decodedText === lastScannedId && (now - lastScannedAt) < DEBOUNCE_MS) return;
+        lastScannedId = decodedText;
+        lastScannedAt = now;
+        if (isScanning) addRecord(decodedText, 'QR');
+    };
+
+    function startScanner() {
+        if (!movementSelect.value) {
+            showMessage('الرجاء اختيار نوع الحركة أولاً.', 'error');
+            return;
+        }
+        if (isScanning) return;
+        html5QrCode = new Html5Qrcode(READER_ID);
+        const config = { fps: 10, qrbox: { width: 250, height: 250 }, aspectRatio: 1.0 };
+        Html5Qrcode.getCameras().then(devices => {
+            if (devices && devices.length) {
+                const cameraId = devices.find(d => (d.label || '').toLowerCase().includes('back'))?.id || devices[0].id;
+                html5QrCode.start(cameraId, config, onScanSuccess, (err) => {})
+                    .then(() => {
+                        isScanning = true;
+                        // --- NEW: Refined Flash Capability Check ---
+                        try {
+                            const track = html5QrCode.getRunningTrack();
+                            if (track) {
+                                const capabilities = track.getCapabilities();
+                                // Ensure the 'torch' capability is explicitly a boolean (supported).
+                                if (capabilities && typeof capabilities.torch === 'boolean') {
+                                    canUseFlash = true;
+                                    console.log("Flashlight (torch) is supported.");
+                                } else {
+                                    canUseFlash = false;
+                                    console.warn("Flashlight (torch) not supported by this camera track.");
+                                }
+                            }
+                        } catch (e) {
+                            console.error("Error checking for flashlight capabilities:", e);
+                            canUseFlash = false;
+                        }
+                        updateUIState();
+                    })
+                    .catch(err => {
+                        console.error("Failed to start scanner:", err);
+                        showMessage('خطأ: لا يمكن الوصول للكاميرا. تأكد من الأذونات.', 'error');
+                        html5QrCode = null;
+                    });
+            } else {
+                showMessage('خطأ: لم يتم العثور على كاميرا.', 'error');
+            }
+        }).catch(err => {
+            console.error("Camera permissions error:", err);
+            showMessage('خطأ: لا يمكن الوصول للكاميرا. تأكد من الأذونات.', 'error');
+        });
+    }
+
+    function stopScanner() {
+        if (html5QrCode && isScanning) {
+            html5QrCode.stop()
+                .then(() => { showMessage('تم إيقاف الماسح.', 'info'); })
+                .catch(err => { console.error("Failed to stop scanner cleanly:", err); })
+                .finally(() => {
+                    isScanning = false;
+                    html5QrCode = null;
+                    lastScannedId = null;
+                    updateUIState();
+                });
+        }
+    }
+
+    // --- NEW: Refined Flash Toggle Logic ---
+    async function toggleFlash() {
+        if (!isScanning || !html5QrCode || !canUseFlash) {
+            return;
+        }
+        
+        const newState = !isFlashOn;
+        try {
+            const track = html5QrCode.getRunningTrack();
+            if (!track) {
+                console.error("Could not get running video track to control flash.");
+                return;
+            }
+            // Apply the 'torch' constraint. This is an async operation.
+            await track.applyConstraints({
+                advanced: [{ torch: newState }]
+            });
+            // If successful, update the state and UI.
+            isFlashOn = newState;
+            updateFlashUI();
+        } catch (err) {
+            // If it fails, the device/browser may not truly support it.
+            // Inform the user once and disable the feature to prevent further errors.
+            console.error("Failed to apply torch constraint:", err);
+            showMessage('فشل التحكم بالفلاش. قد لا يكون مدعومًا.', 'error');
+            canUseFlash = false; // Disable the feature permanently for this session.
+            updateUIState(); // Update UI to disable the button.
+        }
+    }
+
+    function toggleMute() {
+        isMuted = !isMuted;
+        localStorage.setItem(VOLUME_STORAGE_KEY, String(isMuted));
+        updateVolumeUI();
+    }
+
+    // --- Event Handlers & Storage ---
+    function handleManualAdd() {
+        const value = manualInput.value.trim();
+        if (!value) {
+            showMessage('أدخل رقمًا صالحًا', 'error');
+            return;
+        }
+        if (addRecord(value, 'Manual')) {
+            manualInput.value = '';
+        }
+    }
+
+    function saveToLocal() {
+        try {
+            localStorage.setItem(LOCAL_STORAGE_KEY_RECORDS, JSON.stringify(records));
+        } catch (e) { console.error("Failed to save to local storage", e); }
+    }
+
+    function loadFromLocal() {
+        try {
+            const stored = localStorage.getItem(LOCAL_STORAGE_KEY_RECORDS);
+            if (stored) records = JSON.parse(stored);
+        } catch (e) { console.error("Failed to load from local storage", e); records = []; }
+    }
+
+    function loadVolumePreference() {
+        try {
+            isMuted = localStorage.getItem(VOLUME_STORAGE_KEY) === 'true';
+        } catch (e) { console.error("Failed to load volume preference", e); isMuted = false; }
+    }
+
+    function getDeviceId() {
+        let id = localStorage.getItem(DEVICE_ID_KEY);
+        if (!id) {
+            id = `device-${Date.now()}-${Math.random().toString(36).substring(2, 11)}`;
+            localStorage.setItem(DEVICE_ID_KEY, id);
+        }
+        return id;
+    };
+
+    // --- Initialization ---
+    try {
+        beepSound = new Audio("data:audio/wav;base64," + BEEP_BASE64);
+        beepSound.volume = 1.0;
+    } catch (e) { console.error("Failed to initialize audio object:", e); }
+
+    startBtn.addEventListener('click', startScanner);
+    stopBtn.addEventListener('click', stopScanner);
+    flashBtn.addEventListener('click', toggleFlash);
+    volumeBtn.addEventListener('click', toggleMute);
+    manualAddBtn.addEventListener('click', handleManualAdd);
+    sendBtn.addEventListener('click', handleSendToGoogle);
+    movementSelect.addEventListener('change', updateThemeColor);
+    manualInput.addEventListener('input', () => {
+        manualInput.value = manualInput.value.replace(/[^0-9]/g, '');
     });
-  } else {
-    handleScanned(qrCodeMessage);
-    setTimeout(() => startScanner(), 1000);
-  }
-}
-
-function onScanError(error) {
-  // Ignore scanning errors - they're normal during continuous scanning
-}
-
-// ---------------- Enhanced Sync Functions ----------------
-function syncPendingRecords(isAutoSync = false) {
-  if (pendingRecords.length === 0) {
-    if (!isAutoSync) {
-      showConfirmation({movement_type: '', employee_id: 'لا توجد سجلات في الانتظار'});
-    }
-    return;
-  }
-
-  if (!navigator.onLine) {
-    if (!isAutoSync) {
-      showError('لا يوجد اتصال بالإنترنت');
-    }
-    return;
-  }
-
-  const syncBtn = document.getElementById('syncBtn');
-  if (!isAutoSync) {
-    syncBtn.innerHTML = '⏳ جاري المزامنة...';
-    syncBtn.disabled = true;
-  }
-
-  showConfirmation({movement_type: '', employee_id: `جاري مزامنة ${pendingRecords.length} سجل...`});
-
-  sendToGoogle(pendingRecords).then(success => {
-    if (success && !isAutoSync) {
-      showConfirmation({movement_type: '', employee_id: `تمت مزامنة ${pendingRecords.length} سجل`});
-    }
-  }).finally(() => {
-    if (!isAutoSync) {
-      setTimeout(() => {
-        syncBtn.innerHTML = '🔄 مزامنة';
-        syncBtn.disabled = false;
-      }, 2000);
-    }
-  });
-}
-
-// ---------------- Improved Google Apps Script Communication ----------------
-async function sendToGoogle(recordsToSend) {
-  if (!Array.isArray(recordsToSend) || recordsToSend.length === 0) return false;
-
-  if (!navigator.onLine) {
-    console.log('Offline - records saved locally');
-    return false;
-  }
-
-  const payload = {
-    action: 'saveRecords',
-    records: recordsToSend,
-    timestamp: new Date().toISOString(),
-    source: 'attendance_app_mobile'
-  };
-
-  try {
-    const response = await fetch(GOOGLE_SCRIPT_URL, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(payload)
-    });
-
-    if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
     
-    const result = await response.json();
-    console.log('Server response:', result);
-    
-    if (result.success) {
-      const syncedIds = result.saved_records.map(r => r.id);
-      pendingRecords = pendingRecords.filter(record => !syncedIds.includes(record.id));
-      updateCounter();
-      saveLocally();
-      return true;
-    } else {
-      console.error('Server reported error:', result.error);
-      return false;
-    }
-  } catch (error) {
-    console.error('Network error:', error);
-    // Retry with FormData as fallback
-    return await retryWithFormData(recordsToSend);
-  }
-}
-
-// ... باقي الدوال بنفس الكود السابق مع التعديلات البسيطة ...
-
-// ---------------- Initialize App ----------------
-document.addEventListener('DOMContentLoaded', function() {
-  // Set default movement type
-  document.getElementById('movementSelect').value = 'دخول';
-  
-  // Load saved data
-  loadLocally();
-  
-  // Initialize auto-sync
-  initializeAutoSync();
-  
-  // Test connection
-  testConnection();
-  
-  // Add event listeners
-  document.getElementById('startBtn').addEventListener('click', startScanner);
-  document.getElementById('stopBtn').addEventListener('click', stopScanner);
-  document.getElementById('manualAddBtn').addEventListener('click', manualAdd);
-  document.getElementById('exportBtn').addEventListener('click', exportToExcel);
-  document.getElementById('syncBtn').addEventListener('click', () => syncPendingRecords(false));
-  document.getElementById('manualInput').addEventListener('keypress', function(e) {
-    if (e.key === 'Enter') manualAdd();
-  });
-  
-  // Initialize service worker for PWA
-  if('serviceWorker' in navigator) {
-    navigator.serviceWorker.register('service-worker.js')
-      .then(() => console.log('SW registered'))
-      .catch(err => console.log('SW registration failed:', err));
-  }
+    deviceId = getDeviceId();
+    loadFromLocal();
+    loadVolumePreference();
+    updateUIState();
+    updateThemeColor();
+    updateVolumeUI();
 });
-
-// ... باقي الدوال الأساسية تبقى كما هي مع تحسينات بسيطة ...
 </script>
+
 </body>
 </html>
+--- END OF FILE App.tsx ---
+--- END OF FILE types.ts ---
+--- END OF FILE constants.ts ---
+--- END OF FILE metadata.json ---
+--- END OF FILE index.tsx ---
