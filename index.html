@@ -100,7 +100,7 @@
 <script>
 document.addEventListener('DOMContentLoaded', () => {
     // --- Constants ---
-    const GOOGLE_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycby9B1hFP3kUsqvsQLRE1PkkqCz4rEXnwAEDvBJEC5DVqPl_DUOH1wcc2euFtnjgfFng/exec';
+    const GOOGLE_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwiiMUSBJ-eLkO2WgdXlN8BIEDRe5ZZ3ZQn9fBP16blQyuXB19t3G5bfF7NVueot9h7/exec';
     const LOCAL_STORAGE_KEY_RECORDS = 'attendance_records_local_v2';
     const VOLUME_STORAGE_KEY = 'attendance_app_isMuted';
     const DEVICE_ID_KEY = 'attendance_app_device_id_v2';
@@ -271,10 +271,13 @@ document.addEventListener('DOMContentLoaded', () => {
                 });
                 params.append('records_batch', JSON.stringify(batchPayload));
                 
+                // **** THIS IS THE FIX ****
                 await fetch(GOOGLE_SCRIPT_URL, {
                     method: 'POST',
-                    mode: 'no-cors',
-                    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                    redirect: 'follow', // CRITICAL: This tells the browser to follow Google's redirect.
+                    headers: { 
+                        'Content-Type': 'application/x-www-form-urlencoded' 
+                    },
                     body: params.toString()
                 });
 
@@ -289,7 +292,7 @@ document.addEventListener('DOMContentLoaded', () => {
             
         } catch (error) {
             console.error("Failed to send records:", error);
-            modalMessage.textContent = `❌ Sending failed. Remaining records have been saved.`;
+            modalMessage.textContent = `❌ Sending failed. Some records may not have been sent.`;
             // Only remove the records that were successfully sent
             records = recordsToSend.slice(sentCount).reverse();
             saveToLocal();
